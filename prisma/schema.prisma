@@ -1,0 +1,305 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================
+// ENUMS
+// ======================================
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  CANCELED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+enum PermissionKey {
+  CREATE_SALE
+  CANCEL_SALE
+  VIEW_SALES
+  MANAGE_PRODUCTS
+  MANAGE_STOCK
+  OPEN_CASH
+  CLOSE_CASH
+  VIEW_REPORTS
+  MANAGE_USERS
+}
+
+// ======================================
+// AUTH & RBAC
+// ======================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  active    Boolean  @default(true)
+
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+
+  sales     Sale[]
+  sessions  CashSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([roleId])
+  @@index([deletedAt])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id      String         @id @default(uuid())
+  key     PermissionKey @unique
+  label   String
+
+  roles   RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+// ======================================
+// PRODUCTS
+// ======================================
+
+model ProductCategory {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  categoryId  String?
+  category    ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  variants    ProductVariant[]
+
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([deletedAt])
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String
+  sku       String   @unique
+  name      String?
+
+  price     Decimal  @db.Decimal(10, 2)
+  costPrice Decimal  @db.Decimal(10, 2)
+
+  product   Product  @relation(fields: [productId], references: [id])
+  stock     Stock?
+  saleItems SaleItem[]
+  movements StockMovement[]
+
+  @@index([productId])
+}
+
+// ======================================
+// INVENTORY
+// ======================================
+
+model Stock {
+  id               String         @id @default(uuid())
+  productVariantId String         @unique
+  quantity         Int            @default(0)
+
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  updatedAt        DateTime       @updatedAt
+}
+
+model StockMovement {
+  id               String            @id @default(uuid())
+  productVariantId String
+  type             StockMovementType
+  quantity         Int
+  reason           String?
+
+  variant          ProductVariant    @relation(fields: [productVariantId], references: [id])
+
+  saleItemId       String?
+  saleItem         SaleItem?         @relation(fields: [saleItemId], references: [id])
+
+  createdAt        DateTime          @default(now())
+
+  @@index([productVariantId])
+  @@index([saleItemId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ======================================
+// CUSTOMERS
+// ======================================
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String?
+  phone     String?
+  taxId     String?
+
+  sales     Sale[]
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([taxId])
+}
+
+// ======================================
+// SALES
+// ======================================
+
+model Sale {
+  id         String     @id @default(uuid())
+  status     SaleStatus @default(COMPLETED)
+
+  sessionId  String?
+  session    CashSession? @relation(fields: [sessionId], references: [id])
+
+  userId     String
+  customerId String?
+
+  subtotal   Decimal    @db.Decimal(10, 2)
+  tax        Decimal    @db.Decimal(10, 2) @default(0)
+  discount   Decimal    @db.Decimal(10, 2) @default(0)
+  total      Decimal    @db.Decimal(10, 2)
+  totalCost  Decimal?   @db.Decimal(10, 2)
+
+  user       User       @relation(fields: [userId], references: [id])
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+
+  items      SaleItem[]
+  payments   Payment[]
+
+  createdAt  DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([customerId])
+  @@index([status])
+}
+
+// ======================================
+// SALE ITEMS
+// ======================================
+
+model SaleItem {
+  id               String           @id @default(uuid())
+  saleId           String
+  productVariantId String
+  quantity         Int
+
+  priceAtSale      Decimal          @db.Decimal(10, 2)
+  costAtSale       Decimal          @db.Decimal(10, 2)
+
+  sale             Sale             @relation(fields: [saleId], references: [id])
+  variant          ProductVariant   @relation(fields: [productVariantId], references: [id])
+  stockMovements   StockMovement[]
+
+  @@index([saleId])
+  @@index([productVariantId])
+}
+
+// ======================================
+// PAYMENTS
+// ======================================
+
+model Payment {
+  id        String        @id @default(uuid())
+  saleId    String
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+
+  sale      Sale          @relation(fields: [saleId], references: [id])
+
+  createdAt DateTime      @default(now())
+
+  @@index([saleId])
+  @@index([method])
+}
+
+// ======================================
+// CASH MANAGEMENT
+// ======================================
+
+model CashRegister {
+  id       String        @id @default(uuid())
+  name     String
+  active   Boolean       @default(true)
+
+  sessions CashSession[]
+}
+
+model CashSession {
+  id             String   @id @default(uuid())
+  cashRegisterId String
+  userId         String
+
+  openingAmount  Decimal  @db.Decimal(10, 2)
+  closingAmount  Decimal? @db.Decimal(10, 2)
+  expectedAmount Decimal? @db.Decimal(10, 2)
+  difference     Decimal? @db.Decimal(10, 2)
+
+  openedAt       DateTime @default(now())
+  closedAt       DateTime?
+
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  sales          Sale[]
+
+  @@index([cashRegisterId])
+  @@index([userId])
+  @@index([openedAt])
+  @@index([closedAt])
+}
