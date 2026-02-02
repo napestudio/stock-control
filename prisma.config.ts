@@ -7,7 +7,7 @@ export default defineConfig({
 
   migrations: {
     path: path.join("prisma", "migrations"),
-    seed: "tsx prisma/seed.ts",
+    seed: "tsx ./prisma/seed.ts",
   },
 
   datasource: {

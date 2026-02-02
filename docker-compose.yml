@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_DB: stock-control-db
       POSTGRES_USER: nap_creativa
-      POSTGRES_PASSWORD: Napestudio@123
+      POSTGRES_PASSWORD: NapcreativaDb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
