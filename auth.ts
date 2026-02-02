@@ -35,6 +35,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             password: true,
             active: true,
             roleId: true,
+            requirePasswordChange: true,
             role: {
               select: {
                 name: true,
@@ -64,18 +65,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role.name,
           roleId: user.roleId,
+          requirePasswordChange: user.requirePasswordChange,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       // On sign in, add user data to token
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.roleId = user.roleId;
+        token.requirePasswordChange = user.requirePasswordChange;
       }
+
+      // On update trigger, refresh requirePasswordChange from database
+      if (trigger === "update") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { requirePasswordChange: true },
+        });
+        token.requirePasswordChange = dbUser?.requirePasswordChange ?? false;
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -84,6 +97,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.roleId = token.roleId as string;
+        session.user.requirePasswordChange = token.requirePasswordChange as boolean;
       }
       return session;
     },

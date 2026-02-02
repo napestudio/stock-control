@@ -1,12 +1,11 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-
 export default auth((req) => {
   const isAuthenticated = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/";
   const isDashboard = req.nextUrl.pathname.startsWith("/panel");
+  const isChangePassword = req.nextUrl.pathname === "/panel/change-password";
 
   // Redirect to dashboard if authenticated and trying to access login
   if (isAuthenticated && isLoginPage) {
@@ -16,6 +15,13 @@ export default auth((req) => {
   // Redirect to login if not authenticated and trying to access dashboard
   if (!isAuthenticated && isDashboard) {
     return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // Check if user needs to change password
+  if (isAuthenticated && isDashboard && !isChangePassword) {
+    if (req.auth?.user?.requirePasswordChange) {
+      return NextResponse.redirect(new URL("/panel/change-password", req.url));
+    }
   }
 
   return NextResponse.next();
