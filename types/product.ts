@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 
-// Product with all relations (category, variants with stock)
-export type ProductWithRelations = Prisma.ProductGetPayload<{
+// Raw product from database with Decimal types
+type RawProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: true;
     variants: {
@@ -12,12 +12,28 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
   };
 }>;
 
-// Variant with stock
-export type VariantWithStock = Prisma.ProductVariantGetPayload<{
-  include: {
-    stock: true;
-  };
-}>;
+// Serialized product for client (Decimal → number)
+export type ProductWithRelations = Omit<RawProductWithRelations, 'variants'> & {
+  variants: Array<
+    Omit<RawProductWithRelations['variants'][0], 'price' | 'costPrice'> & {
+      price: number;
+      costPrice: number;
+    }
+  >;
+};
+
+// Variant with stock (serialized)
+export type VariantWithStock = Omit<
+  Prisma.ProductVariantGetPayload<{
+    include: {
+      stock: true;
+    };
+  }>,
+  'price' | 'costPrice'
+> & {
+  price: number;
+  costPrice: number;
+};
 
 // Optimistic update action types for useOptimistic hook
 export type OptimisticAction =

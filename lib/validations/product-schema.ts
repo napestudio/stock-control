@@ -1,8 +1,11 @@
 import { z } from "zod";
 
+// UUID regex pattern
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Product variant schema (nested within product)
 export const variantSchema = z.object({
-  id: z.string().uuid().optional(), // Optional for new variants
+  id: z.string().regex(UUID_REGEX, "Invalid ID").optional(), // Optional for new variants
   sku: z.string().min(1, "SKU is required").max(50, "SKU must be 50 characters or less"),
   name: z.string().max(100, "Variant name must be 100 characters or less").optional(),
   price: z.number().min(0, "Price must be a positive number"),
@@ -14,16 +17,22 @@ export const variantSchema = z.object({
 export const createProductSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200, "Product name must be 200 characters or less"),
   description: z.string().max(500, "Description must be 500 characters or less").optional(),
-  categoryId: z.string().transform((val) => val === "" ? undefined : val).pipe(z.string().uuid().optional()).optional(),
+  categoryId: z.string()
+    .optional()
+    .transform(val => !val || val === "" ? undefined : val)
+    .refine(val => !val || UUID_REGEX.test(val), "Invalid category"),
   variants: z.array(variantSchema).min(1, "At least one variant is required"),
 });
 
 // Edit product schema
 export const editProductSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().regex(UUID_REGEX, "Invalid ID"),
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(500).nullable().optional(),
-  categoryId: z.string().transform((val) => val === "" ? undefined : val).pipe(z.string().uuid().optional()).optional(),
+  categoryId: z.string()
+    .optional()
+    .transform(val => !val || val === "" ? undefined : val)
+    .refine(val => !val || UUID_REGEX.test(val), "Invalid category"),
   active: z.boolean().optional(),
   variants: z.array(variantSchema).optional(),
 });

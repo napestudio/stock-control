@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useOptimistic, useTransition } from "react";
-import { Prisma, type ProductCategory } from "@prisma/client";
+import type { ProductCategory } from "@prisma/client";
 import type { ProductWithRelations, OptimisticAction } from "@/types/product";
 import type {
   CreateProductInput,
@@ -173,8 +173,8 @@ export default function ProductManagementClient({
           productId: tempId,
           sku: v.sku,
           name: v.name || null,
-          price: new Prisma.Decimal(v.price),
-          costPrice: new Prisma.Decimal(v.costPrice),
+          price: v.price,
+          costPrice: v.costPrice,
           stock: {
             id: `temp-stock-${idx}`,
             productVariantId: `temp-variant-${idx}`,

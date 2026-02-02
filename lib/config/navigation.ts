@@ -23,9 +23,4 @@ export const navigationItems: NavItem[] = [
     icon: "users",
     requiresAdmin: true,
   },
-  {
-    path: "/panel/change-password",
-    label: "Cambiar Contraseña",
-    icon: "key",
-  },
 ];

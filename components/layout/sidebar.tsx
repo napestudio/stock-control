@@ -39,7 +39,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile overlay */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -47,7 +46,6 @@ export default function Sidebar({
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
         fixed top-0 left-0 h-svh w-96 bg-white shadow-lg z-50
@@ -56,7 +54,6 @@ export default function Sidebar({
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
       `}
       >
-        {/* Header */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-indigo-600">Stock Control</h2>
           <button
@@ -68,7 +65,6 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-2">
             {visibleItems.map((item) => (
@@ -103,7 +99,6 @@ export default function Sidebar({
           </ul>
         </nav>
 
-        {/* User section */}
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">

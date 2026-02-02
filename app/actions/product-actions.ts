@@ -22,8 +22,19 @@ export async function createProduct(data: CreateProductInput) {
     throw new Error("Unauthorized: Admin access required");
   }
 
+  // Debug logging
+  console.log("📝 Raw data received:", {
+    categoryId: data.categoryId,
+    name: data.name
+  });
+
   // Validate input
   const validated = createProductSchema.parse(data);
+
+  console.log("✅ Validated data:", {
+    categoryId: validated.categoryId,
+    name: validated.name
+  });
 
   // Check for SKU uniqueness
   const existingSkus = await prisma.productVariant.findMany({
@@ -43,6 +54,8 @@ export async function createProduct(data: CreateProductInput) {
 
   // Create product with variants in transaction
   const product = await prisma.$transaction(async (tx) => {
+    console.log("💾 Saving to database with categoryId:", validated.categoryId || null);
+
     const newProduct = await tx.product.create({
       data: {
         name: validated.name,
@@ -86,11 +99,11 @@ export async function createProduct(data: CreateProductInput) {
       price: Number(variant.price),
       costPrice: Number(variant.costPrice),
     })),
-  };
+  } as const;
 
   return {
     success: true,
-    data: serializedProduct as any,
+    data: serializedProduct,
   };
 }
 
@@ -218,18 +231,20 @@ export async function updateProduct(
   revalidatePath("/panel/products");
 
   // Serialize Decimal fields to numbers
-  const serializedProduct = product ? {
-    ...product,
-    variants: product.variants.map((variant) => ({
-      ...variant,
-      price: Number(variant.price),
-      costPrice: Number(variant.costPrice),
-    })),
-  } : null;
+  const serializedProduct = product
+    ? {
+        ...product,
+        variants: product.variants.map((variant) => ({
+          ...variant,
+          price: Number(variant.price),
+          costPrice: Number(variant.costPrice),
+        })),
+      }
+    : null;
 
   return {
     success: true,
-    data: serializedProduct as any,
+    data: serializedProduct,
   };
 }
 
@@ -328,7 +343,7 @@ export async function getProducts(
     })),
   }));
 
-  return products as any;
+  return products;
 }
 
 /**

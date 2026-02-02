@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createProductSchema,
   type CreateProductInput,
+  type VariantInput,
 } from "@/lib/validations/product-schema";
 import FormInput from "@/components/ui/form-input";
 import FormSelect from "@/components/ui/form-select";
@@ -22,7 +23,14 @@ interface ProductFormProps {
   error?: string;
 }
 
-type FormData = CreateProductInput & { active?: boolean };
+// Form data type with all optional fields for flexibility
+type FormData = {
+  name: string;
+  description?: string;
+  categoryId?: string;
+  active?: boolean;
+  variants: VariantInput[];
+};
 
 export default function ProductForm({
   mode,
@@ -44,13 +52,14 @@ export default function ProductForm({
     control,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(mode === "create" ? createProductSchema : createProductSchema),
+    resolver: zodResolver(createProductSchema),
     defaultValues:
       mode === "edit" && product
         ? {
             name: product.name,
             description: product.description || "",
-            categoryId: product.categoryId || undefined,
+            categoryId: product.categoryId || "",
+            active: product.active,
             variants: product.variants.map((v) => ({
               id: v.id,
               sku: v.sku,
@@ -60,6 +69,9 @@ export default function ProductForm({
             })),
           }
         : {
+            name: "",
+            description: "",
+            categoryId: "",
             variants: [{ sku: "", name: "", price: 0, costPrice: 0 }],
           },
   });
@@ -71,11 +83,23 @@ export default function ProductForm({
 
   async function onFormSubmit(data: FormData) {
     setInternalError("");
+    console.log("📤 Form data before submit:", {
+      categoryId: data.categoryId,
+      name: data.name,
+      variantCount: data.variants.length
+    });
+
     try {
       // Remove active field if in create mode
       const submitData = mode === "create"
         ? { ...data, active: undefined }
         : data;
+
+      console.log("📤 Final submit data:", {
+        categoryId: submitData.categoryId,
+        name: submitData.name
+      });
+
       onSubmit(submitData as CreateProductInput);
     } catch (err) {
       setInternalError(
