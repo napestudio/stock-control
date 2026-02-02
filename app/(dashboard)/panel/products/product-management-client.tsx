@@ -3,7 +3,10 @@
 import { useState, useOptimistic, useTransition } from "react";
 import { Prisma, type ProductCategory } from "@prisma/client";
 import type { ProductWithRelations, OptimisticAction } from "@/types/product";
-import type { CreateProductInput, EditProductInput } from "@/lib/validations/product-schema";
+import type {
+  CreateProductInput,
+  EditProductInput,
+} from "@/lib/validations/product-schema";
 import ProductTable from "@/components/products/product-table";
 import ProductForm from "@/components/products/product-form";
 import ProductDetailModal from "@/components/products/product-detail-modal";
@@ -44,7 +47,7 @@ export default function ProductManagementClient({
         case "update":
           // Update existing product
           return state.map((p) =>
-            p.id === action.id ? { ...p, ...action.product } : p
+            p.id === action.id ? { ...p, ...action.product } : p,
           );
         case "delete":
           // Remove product from list
@@ -52,7 +55,7 @@ export default function ProductManagementClient({
         default:
           return state;
       }
-    }
+    },
   );
 
   const [isPending, startTransition] = useTransition();
@@ -79,11 +82,13 @@ export default function ProductManagementClient({
       const fetchedProducts = await getProducts(
         filter,
         categoryFilter,
-        searchQuery
+        searchQuery,
       );
       setProducts(fetchedProducts);
     } catch (err) {
-      setPageError(err instanceof Error ? err.message : "Failed to fetch products");
+      setPageError(
+        err instanceof Error ? err.message : "Failed to fetch products",
+      );
     }
   }
 
@@ -95,12 +100,12 @@ export default function ProductManagementClient({
         const fetchedProducts = await getProducts(
           newFilter,
           categoryFilter,
-          searchQuery
+          searchQuery,
         );
         setProducts(fetchedProducts);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : "Failed to fetch products"
+          err instanceof Error ? err.message : "Failed to fetch products",
         );
       }
     });
@@ -114,12 +119,12 @@ export default function ProductManagementClient({
         const fetchedProducts = await getProducts(
           filter,
           categoryId || undefined,
-          searchQuery
+          searchQuery,
         );
         setProducts(fetchedProducts);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : "Failed to fetch products"
+          err instanceof Error ? err.message : "Failed to fetch products",
         );
       }
     });
@@ -133,12 +138,12 @@ export default function ProductManagementClient({
         const fetchedProducts = await getProducts(
           filter,
           categoryFilter || undefined,
-          query || undefined
+          query || undefined,
         );
         setProducts(fetchedProducts);
       } catch (err) {
         setPageError(
-          err instanceof Error ? err.message : "Failed to fetch products"
+          err instanceof Error ? err.message : "Failed to fetch products",
         );
       }
     });
@@ -179,7 +184,11 @@ export default function ProductManagementClient({
         })),
       };
 
-      addOptimisticUpdate({ type: "create", tempId, product: optimisticProduct });
+      addOptimisticUpdate({
+        type: "create",
+        tempId,
+        product: optimisticProduct,
+      });
 
       try {
         await createProduct(data);
@@ -187,7 +196,9 @@ export default function ProductManagementClient({
         setModalError(""); // Clear on success
         await refreshProducts();
       } catch (err) {
-        setModalError(err instanceof Error ? err.message : "Failed to create product");
+        setModalError(
+          err instanceof Error ? err.message : "Failed to create product",
+        );
         // Optimistic update will be rolled back automatically
       }
     });
@@ -196,7 +207,7 @@ export default function ProductManagementClient({
   // Handle update with optimistic update
   async function handleUpdateProduct(
     id: string,
-    data: Partial<EditProductInput>
+    data: Partial<EditProductInput>,
   ) {
     const currentProduct = products.find((p) => p.id === id);
     if (!currentProduct) return;
@@ -225,7 +236,9 @@ export default function ProductManagementClient({
         setModalError(""); // Clear on success
         await refreshProducts();
       } catch (err) {
-        setModalError(err instanceof Error ? err.message : "Failed to update product");
+        setModalError(
+          err instanceof Error ? err.message : "Failed to update product",
+        );
         // Optimistic update will be rolled back automatically
       }
     });
@@ -245,7 +258,9 @@ export default function ProductManagementClient({
         setDeletingProduct(null);
         await refreshProducts();
       } catch (err) {
-        setPageError(err instanceof Error ? err.message : "Failed to delete product");
+        setPageError(
+          err instanceof Error ? err.message : "Failed to delete product",
+        );
         // Optimistic update will be rolled back automatically
       }
     });
@@ -393,13 +408,12 @@ export default function ProductManagementClient({
         />
       )}
 
-      {/* Create product modal */}
       {createModalOpen && (
         <Modal
           isOpen={createModalOpen}
           onClose={() => {
             setCreateModalOpen(false);
-            setModalError(""); // Clear error on close
+            setModalError("");
           }}
           title="Create New Product"
           size="lg"
@@ -410,7 +424,7 @@ export default function ProductManagementClient({
             onSubmit={handleCreateProduct}
             onCancel={() => {
               setCreateModalOpen(false);
-              setModalError(""); // Clear error on cancel
+              setModalError("");
             }}
             isPending={isPending}
             error={modalError}

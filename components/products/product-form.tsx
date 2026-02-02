@@ -22,6 +22,8 @@ interface ProductFormProps {
   error?: string;
 }
 
+type FormData = CreateProductInput & { active?: boolean };
+
 export default function ProductForm({
   mode,
   product,
@@ -41,8 +43,8 @@ export default function ProductForm({
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm<CreateProductInput>({
-    resolver: zodResolver(createProductSchema),
+  } = useForm<FormData>({
+    resolver: zodResolver(mode === "create" ? createProductSchema : createProductSchema),
     defaultValues:
       mode === "edit" && product
         ? {
@@ -67,12 +69,18 @@ export default function ProductForm({
     name: "variants",
   });
 
-  async function onFormSubmit(data: CreateProductInput) {
+  async function onFormSubmit(data: FormData) {
     setInternalError("");
     try {
-      onSubmit(data);
+      // Remove active field if in create mode
+      const submitData = mode === "create"
+        ? { ...data, active: undefined }
+        : data;
+      onSubmit(submitData as CreateProductInput);
     } catch (err) {
-      setInternalError(err instanceof Error ? err.message : "An error occurred");
+      setInternalError(
+        err instanceof Error ? err.message : "An error occurred",
+      );
     }
   }
 
@@ -84,7 +92,6 @@ export default function ProductForm({
         </div>
       )}
 
-      {/* Product Info */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900">
           Product Information
@@ -109,9 +116,7 @@ export default function ProductForm({
             placeholder="Optional product description"
           />
           {errors.description && (
-            <p className="text-sm text-red-600">
-              {errors.description.message}
-            </p>
+            <p className="text-sm text-red-600">{errors.description.message}</p>
           )}
         </div>
 
@@ -132,7 +137,7 @@ export default function ProductForm({
               id="active"
               defaultChecked={product?.active}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              {...register("active" as any)}
+              {...register("active")}
             />
             <label
               htmlFor="active"
