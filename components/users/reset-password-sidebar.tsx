@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Modal from "@/components/ui/modal";
+import Sidebar from "@/components/ui/sidebar";
 
-interface ResetPasswordModalProps {
+interface ResetPasswordSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   password: string;
 }
 
-export default function ResetPasswordModal({
+export default function ResetPasswordSidebar({
   isOpen,
   onClose,
   password,
-}: ResetPasswordModalProps) {
+}: ResetPasswordSidebarProps) {
   const [copied, setCopied] = useState(false);
 
   async function copyToClipboard() {
@@ -27,7 +27,7 @@ export default function ResetPasswordModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Password Reset" size="md">
+    <Sidebar isOpen={isOpen} onClose={onClose} title="Password Reset" size="md">
       <div className="space-y-4">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex">
@@ -83,6 +83,6 @@ export default function ResetPasswordModal({
           </button>
         </div>
       </div>
-    </Modal>
+    </Sidebar>
   );
 }

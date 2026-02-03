@@ -4,9 +4,9 @@ import { useState } from "react";
 import type { Role, User } from "@prisma/client";
 import UserTable from "@/components/users/user-table";
 import UserForm from "@/components/users/user-form";
-import ResetPasswordModal from "@/components/users/reset-password-modal";
+import ResetPasswordSidebar from "@/components/users/reset-password-sidebar";
 import DeleteConfirmationModal from "@/components/users/delete-confirmation-modal";
-import Modal from "@/components/ui/modal";
+import Sidebar from "@/components/ui/sidebar";
 import { getUsers, resetUserPassword, softDeleteUser } from "@/app/actions/user-actions";
 
 type UserWithRole = User & { role: Role };
@@ -220,10 +220,11 @@ export default function UserManagementClient({
 
       {/* Create user modal */}
       {createModalOpen && (
-        <Modal
+        <Sidebar
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           title="Create New User"
+          size="md"
         >
           <UserForm
             mode="create"
@@ -231,18 +232,19 @@ export default function UserManagementClient({
             onSuccess={handleCreateSuccess}
             onCancel={() => setCreateModalOpen(false)}
           />
-        </Modal>
+        </Sidebar>
       )}
 
-      {/* Edit user modal */}
+      {/* Edit user sidebar */}
       {editModalOpen && editingUser && (
-        <Modal
+        <Sidebar
           isOpen={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);
             setEditingUser(null);
           }}
           title="Edit User"
+          size="md"
         >
           <UserForm
             mode="edit"
@@ -254,11 +256,11 @@ export default function UserManagementClient({
               setEditingUser(null);
             }}
           />
-        </Modal>
+        </Sidebar>
       )}
 
       {/* Reset password modal */}
-      <ResetPasswordModal
+      <ResetPasswordSidebar
         isOpen={resetPasswordModalOpen}
         onClose={() => setResetPasswordModalOpen(false)}
         password={resetPasswordData}
