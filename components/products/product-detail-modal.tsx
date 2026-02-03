@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Modal from "@/components/ui/modal";
 import Badge from "@/components/ui/badge";
 import type { ProductWithRelations } from "@/types/product";
@@ -25,6 +26,19 @@ export default function ProductDetailModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={product.name} size="lg">
       <div className="space-y-6">
+        {/* Product Image */}
+        {product.imageUrl && (
+          <div className="relative w-full h-64 rounded-lg overflow-hidden bg-gray-100">
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 600px"
+            />
+          </div>
+        )}
+
         {/* Product info */}
         <div className="space-y-3">
           <div className="flex justify-between items-start">

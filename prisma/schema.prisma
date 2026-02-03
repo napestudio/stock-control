@@ -114,6 +114,9 @@ model Product {
   categoryId  String?
   category    ProductCategory? @relation(fields: [categoryId], references: [id])
 
+  imageUrl      String?  // Full Cloudinary URL for display
+  imagePublicId String?  // Cloudinary public_id for deletion
+
   variants    ProductVariant[]
 
   active      Boolean   @default(true)
@@ -124,6 +127,9 @@ model Product {
   @@index([name])
   @@index([categoryId])
   @@index([deletedAt])
+  @@index([imagePublicId])
+  @@index([deletedAt, active])  // Composite index for common filter queries
+  @@index([createdAt])           // For ordering by date
 }
 
 model ProductVariant {
@@ -141,6 +147,7 @@ model ProductVariant {
   movements StockMovement[]
 
   @@index([productId])
+  @@index([sku])      // For SKU search optimization
 }
 
 // ======================================

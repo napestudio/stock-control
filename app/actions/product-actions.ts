@@ -11,6 +11,7 @@ import {
 } from "@/lib/validations/product-schema";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import { deleteImage } from "@/lib/cloudinary/upload-helper";
 
 /**
  * Create a new product with variants
@@ -62,6 +63,8 @@ export async function createProduct(data: CreateProductInput) {
         description: validated.description,
         categoryId: validated.categoryId || null,
         active: true,
+        imageUrl: validated.imageUrl || null,
+        imagePublicId: validated.imagePublicId || null,
         variants: {
           create: validated.variants.map((variant) => ({
             sku: variant.sku,
@@ -146,6 +149,12 @@ export async function updateProduct(
 
   // Update product with variants in transaction
   const product = await prisma.$transaction(async (tx) => {
+    // Fetch current product to check for existing image
+    const currentProduct = await tx.product.findUnique({
+      where: { id },
+      select: { imagePublicId: true },
+    });
+
     // Prepare product update data
     const updateData: Prisma.ProductUpdateInput = {};
     if (validated.name !== undefined) updateData.name = validated.name;
@@ -157,6 +166,14 @@ export async function updateProduct(
         : { disconnect: true };
     }
     if (validated.active !== undefined) updateData.active = validated.active;
+
+    // Handle image update/deletion
+    if (validated.imageUrl !== undefined) {
+      updateData.imageUrl = validated.imageUrl;
+    }
+    if (validated.imagePublicId !== undefined) {
+      updateData.imagePublicId = validated.imagePublicId;
+    }
 
     // Update product
     const updatedProduct = await tx.product.update({
@@ -212,7 +229,7 @@ export async function updateProduct(
       }
 
       // Re-fetch with updated variants
-      return await tx.product.findUnique({
+      const refetchedProduct = await tx.product.findUnique({
         where: { id },
         include: {
           category: true,
@@ -222,6 +239,33 @@ export async function updateProduct(
             },
           },
         },
+      });
+
+      // Delete old image from Cloudinary after successful transaction
+      // Only delete if we're replacing with a new image
+      if (
+        currentProduct?.imagePublicId &&
+        validated.imagePublicId &&
+        currentProduct.imagePublicId !== validated.imagePublicId
+      ) {
+        // Async deletion - don't await to avoid blocking
+        deleteImage(currentProduct.imagePublicId).catch((err) => {
+          console.error("Failed to delete old image:", err);
+          // Don't throw - product update was successful
+        });
+      }
+
+      return refetchedProduct;
+    }
+
+    // Delete old image if replacing
+    if (
+      currentProduct?.imagePublicId &&
+      validated.imagePublicId &&
+      currentProduct.imagePublicId !== validated.imagePublicId
+    ) {
+      deleteImage(currentProduct.imagePublicId).catch((err) => {
+        console.error("Failed to delete old image:", err);
       });
     }
 
@@ -258,6 +302,12 @@ export async function softDeleteProduct(productId: string) {
     throw new Error("Unauthorized: Admin access required");
   }
 
+  // Fetch product to get image public ID
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { imagePublicId: true },
+  });
+
   // Soft delete product
   await prisma.product.update({
     where: { id: productId },
@@ -267,6 +317,14 @@ export async function softDeleteProduct(productId: string) {
     },
   });
 
+  // Delete image from Cloudinary (async, non-blocking)
+  if (product?.imagePublicId) {
+    deleteImage(product.imagePublicId).catch((err) => {
+      console.error("Failed to delete product image:", err);
+      // Don't throw - product deletion was successful
+    });
+  }
+
   revalidatePath("/panel/products");
 
   return {
@@ -275,18 +333,24 @@ export async function softDeleteProduct(productId: string) {
 }
 
 /**
- * Get products with filters
+ * Get products with filters and pagination
  */
 export async function getProducts(
   filter?: "all" | "active" | "inactive",
   categoryId?: string,
-  search?: string
+  search?: string,
+  page: number = 1,
+  pageSize: number = 50
 ) {
   const session = await auth();
 
   if (!isAdmin(session)) {
     throw new Error("Unauthorized: Admin access required");
   }
+
+  // Calculate pagination
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
 
   // Build where clause
   const where: Prisma.ProductWhereInput = {
@@ -317,21 +381,26 @@ export async function getProducts(
     ];
   }
 
-  // Query products
-  const productsRaw = await prisma.product.findMany({
-    where,
-    include: {
-      category: true,
-      variants: {
-        include: {
-          stock: true,
+  // Query products with pagination and get total count
+  const [productsRaw, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        variants: {
+          include: {
+            stock: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
   // Serialize Decimal fields to numbers for client components
   const products = productsRaw.map((product) => ({
@@ -343,7 +412,16 @@ export async function getProducts(
     })),
   }));
 
-  return products;
+  return {
+    products,
+    pagination: {
+      page,
+      pageSize,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
+      hasMore: page * pageSize < totalCount,
+    },
+  };
 }
 
 /**
