@@ -12,6 +12,7 @@ import ProductForm from "@/components/products/product-form";
 import ProductDetailModal from "@/components/products/product-detail-modal";
 import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
 import Modal from "@/components/ui/modal";
+import Sidebar from "@/components/ui/sidebar";
 import {
   createProduct,
   updateProduct,
@@ -505,7 +506,7 @@ export default function ProductManagementClient({
       )}
 
       {createModalOpen && (
-        <Modal
+        <Sidebar
           isOpen={createModalOpen}
           onClose={() => {
             setCreateModalOpen(false);
@@ -525,12 +526,12 @@ export default function ProductManagementClient({
             isPending={isPending}
             error={modalError}
           />
-        </Modal>
+        </Sidebar>
       )}
 
-      {/* Edit product modal */}
+      {/* Edit product sidebar */}
       {editModalOpen && editingProduct && (
-        <Modal
+        <Sidebar
           isOpen={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);
@@ -553,7 +554,7 @@ export default function ProductManagementClient({
             isPending={isPending}
             error={modalError}
           />
-        </Modal>
+        </Sidebar>
       )}
 
       {/* View product detail modal */}
