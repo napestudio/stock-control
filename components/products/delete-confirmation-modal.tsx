@@ -6,16 +6,18 @@ interface DeleteConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  userName: string;
-  loading: boolean;
+  productName: string;
+  variantCount: number;
+  isPending?: boolean;
 }
 
 export default function DeleteConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  userName,
-  loading,
+  productName,
+  variantCount,
+  isPending,
 }: DeleteConfirmationModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Confirm Deletion" size="sm">
@@ -38,13 +40,18 @@ export default function DeleteConfirmationModal({
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-gray-900">
-              Deactivate User
+              Deactivate Product
             </h3>
             <div className="mt-2 text-sm text-gray-500">
               <p>
                 Are you sure you want to deactivate{" "}
-                <span className="font-medium text-gray-900">{userName}</span>?
-                They will no longer be able to log in.
+                <span className="font-medium text-gray-900">{productName}</span>
+                ?
+              </p>
+              <p className="mt-1">
+                This product has {variantCount} variant
+                {variantCount !== 1 ? "s" : ""}. The product will be marked as
+                inactive but not permanently deleted.
               </p>
             </div>
           </div>
@@ -54,7 +61,7 @@ export default function DeleteConfirmationModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={loading}
+            disabled={isPending}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
@@ -62,10 +69,10 @@ export default function DeleteConfirmationModal({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={isPending}
             className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Deactivating..." : "Deactivate"}
+            {isPending ? "Deactivating..." : "Deactivate"}
           </button>
         </div>
       </div>
