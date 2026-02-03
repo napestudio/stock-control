@@ -40,3 +40,18 @@ export type OptimisticAction =
   | { type: "create"; tempId: string; product: ProductWithRelations }
   | { type: "update"; id: string; product: Partial<ProductWithRelations> }
   | { type: "delete"; id: string };
+
+// Pagination information
+export interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// Product list result with pagination
+export interface ProductListResult {
+  products: ProductWithRelations[];
+  pagination: PaginationInfo;
+}

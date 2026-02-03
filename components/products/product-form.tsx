@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createProductSchema,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/validations/product-schema";
 import FormInput from "@/components/ui/form-input";
 import FormSelect from "@/components/ui/form-select";
+import ImageUpload from "./image-upload";
 import type { ProductCategory } from "@prisma/client";
 import type { ProductWithRelations } from "@/types/product";
 
@@ -30,6 +31,8 @@ type FormData = {
   categoryId?: string;
   active?: boolean;
   variants: VariantInput[];
+  imageUrl?: string;
+  imagePublicId?: string;
 };
 
 export default function ProductForm({
@@ -50,6 +53,7 @@ export default function ProductForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(createProductSchema),
@@ -60,6 +64,8 @@ export default function ProductForm({
             description: product.description || "",
             categoryId: product.categoryId || "",
             active: product.active,
+            imageUrl: product.imageUrl || undefined,
+            imagePublicId: product.imagePublicId || undefined,
             variants: product.variants.map((v) => ({
               id: v.id,
               sku: v.sku,
@@ -72,6 +78,8 @@ export default function ProductForm({
             name: "",
             description: "",
             categoryId: "",
+            imageUrl: undefined,
+            imagePublicId: undefined,
             variants: [{ sku: "", name: "", price: 0, costPrice: 0 }],
           },
   });
@@ -80,6 +88,15 @@ export default function ProductForm({
     control,
     name: "variants",
   });
+
+  // Watch image URL for preview updates
+  const currentImageUrl = useWatch({ control, name: "imageUrl" });
+
+  // Handle image change callback
+  const handleImageChange = (imageUrl: string | null, imagePublicId: string | null) => {
+    setValue("imageUrl", imageUrl || undefined);
+    setValue("imagePublicId", imagePublicId || undefined);
+  };
 
   async function onFormSubmit(data: FormData) {
     setInternalError("");
@@ -152,6 +169,12 @@ export default function ProductForm({
             label: cat.name,
           }))}
           error={errors.categoryId?.message}
+        />
+
+        <ImageUpload
+          currentImageUrl={currentImageUrl}
+          onImageChange={handleImageChange}
+          disabled={isPending}
         />
 
         {mode === "edit" && (

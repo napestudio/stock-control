@@ -2,7 +2,7 @@
 
 import { useState, useOptimistic, useTransition } from "react";
 import type { ProductCategory } from "@prisma/client";
-import type { ProductWithRelations, OptimisticAction } from "@/types/product";
+import type { ProductWithRelations, OptimisticAction, PaginationInfo } from "@/types/product";
 import type {
   CreateProductInput,
   EditProductInput,
@@ -23,15 +23,19 @@ type FilterType = "all" | "active" | "inactive";
 
 interface ProductManagementClientProps {
   initialProducts: ProductWithRelations[];
+  initialPagination: PaginationInfo;
   categories: ProductCategory[];
 }
 
 export default function ProductManagementClient({
   initialProducts,
+  initialPagination,
   categories,
 }: ProductManagementClientProps) {
   const [products, setProducts] =
     useState<ProductWithRelations[]>(initialProducts);
+  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -79,12 +83,15 @@ export default function ProductManagementClient({
   // Refresh products list
   async function refreshProducts() {
     try {
-      const fetchedProducts = await getProducts(
+      const result = await getProducts(
         filter,
-        categoryFilter,
-        searchQuery,
+        categoryFilter || undefined,
+        searchQuery || undefined,
+        currentPage,
+        50
       );
-      setProducts(fetchedProducts);
+      setProducts(result.products);
+      setPagination(result.pagination);
     } catch (err) {
       setPageError(
         err instanceof Error ? err.message : "Failed to fetch products",
@@ -95,14 +102,18 @@ export default function ProductManagementClient({
   // Filter handler
   async function handleFilterChange(newFilter: FilterType) {
     setFilter(newFilter);
+    setCurrentPage(1); // Reset to first page on filter change
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           newFilter,
-          categoryFilter,
-          searchQuery,
+          categoryFilter || undefined,
+          searchQuery || undefined,
+          1,
+          50
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -114,14 +125,18 @@ export default function ProductManagementClient({
   // Category filter handler
   async function handleCategoryFilterChange(categoryId: string) {
     setCategoryFilter(categoryId);
+    setCurrentPage(1); // Reset to first page on filter change
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           filter,
           categoryId || undefined,
-          searchQuery,
+          searchQuery || undefined,
+          1,
+          50
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -133,14 +148,18 @@ export default function ProductManagementClient({
   // Search handler
   async function handleSearch(query: string) {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on search
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           filter,
           categoryFilter || undefined,
           query || undefined,
+          1,
+          50
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -164,6 +183,8 @@ export default function ProductManagementClient({
         category: data.categoryId
           ? categories.find((c) => c.id === data.categoryId) || null
           : null,
+        imageUrl: data.imageUrl || null,
+        imagePublicId: data.imagePublicId || null,
         active: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -399,13 +420,88 @@ export default function ProductManagementClient({
           <p className="mt-2 text-sm text-gray-500">Loading products...</p>
         </div>
       ) : (
-        <ProductTable
-          products={filteredProducts}
-          onView={handleViewProduct}
-          onEdit={handleEditProduct}
-          onDelete={handleDeleteClick}
-          isPending={isPending}
-        />
+        <>
+          <ProductTable
+            products={filteredProducts}
+            onView={handleViewProduct}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteClick}
+            isPending={isPending}
+          />
+
+          {/* Pagination controls */}
+          {pagination.totalCount > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
+              <div className="text-sm text-gray-700">
+                Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
+                {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{" "}
+                {pagination.totalCount} products
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const newPage = currentPage - 1;
+                    setCurrentPage(newPage);
+                    startTransition(async () => {
+                      try {
+                        const result = await getProducts(
+                          filter,
+                          categoryFilter || undefined,
+                          searchQuery || undefined,
+                          newPage,
+                          50
+                        );
+                        setProducts(result.products);
+                        setPagination(result.pagination);
+                      } catch (err) {
+                        setPageError(
+                          err instanceof Error ? err.message : "Failed to fetch products"
+                        );
+                      }
+                    });
+                  }}
+                  disabled={pagination.page === 1 || isPending}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                <span className="px-4 py-2 text-sm text-gray-700">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+
+                <button
+                  onClick={() => {
+                    const newPage = currentPage + 1;
+                    setCurrentPage(newPage);
+                    startTransition(async () => {
+                      try {
+                        const result = await getProducts(
+                          filter,
+                          categoryFilter || undefined,
+                          searchQuery || undefined,
+                          newPage,
+                          50
+                        );
+                        setProducts(result.products);
+                        setPagination(result.pagination);
+                      } catch (err) {
+                        setPageError(
+                          err instanceof Error ? err.message : "Failed to fetch products"
+                        );
+                      }
+                    });
+                  }}
+                  disabled={!pagination.hasMore || isPending}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {createModalOpen && (

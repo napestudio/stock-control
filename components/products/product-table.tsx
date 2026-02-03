@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Badge from "@/components/ui/badge";
 import type { ProductWithRelations } from "@/types/product";
 
@@ -88,19 +89,35 @@ export default function ProductTable({
                 onClick={() => onView(product)}
               >
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">
-                    {product.name}
-                    {isTemp && (
-                      <span className="ml-2 text-xs text-blue-600">
-                        (Saving...)
-                      </span>
+                  <div className="flex items-center gap-3">
+                    {product.imageUrl && (
+                      <div className="relative w-10 h-10 rounded overflow-hidden shrink-0">
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
                     )}
-                  </div>
-                  {product.description && (
-                    <div className="text-sm text-gray-500 truncate max-w-xs">
-                      {product.description}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900">
+                        {product.name}
+                        {isTemp && (
+                          <span className="ml-2 text-xs text-blue-600">
+                            (Saving...)
+                          </span>
+                        )}
+                      </div>
+                      {product.description && (
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {product.description}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
