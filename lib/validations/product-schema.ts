@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { variantAttributeInputSchema } from "./attribute-schema";
 
 // UUID regex pattern
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -26,14 +27,24 @@ export const imageFileSchema = z
   )
   .optional();
 
-// Image URL schema for server-side validation
+// Image URL schema for server-side validation - allow empty, null, undefined
 export const imageUrlSchema = z
-  .string()
-  .url('Invalid image URL')
-  .regex(/^https:\/\/res\.cloudinary\.com/, 'Must be a Cloudinary URL')
+  .union([
+    z.string().url().regex(/^https:\/\/res\.cloudinary\.com/, 'Must be a Cloudinary URL'),
+    z.literal(''),
+    z.null(),
+    z.undefined()
+  ])
   .optional();
 
-export const imagePublicIdSchema = z.string().optional();
+export const imagePublicIdSchema = z
+  .union([
+    z.string(),
+    z.literal(''),
+    z.null(),
+    z.undefined()
+  ])
+  .optional();
 
 // Product variant schema (nested within product)
 export const variantSchema = z.object({
@@ -42,6 +53,13 @@ export const variantSchema = z.object({
   name: z.string().max(100, "Variant name must be 100 characters or less").optional(),
   price: z.number().min(0, "Price must be a positive number"),
   costPrice: z.number().min(0, "Cost price must be a positive number"),
+
+  // NEW FIELDS for variant attributes
+  imageUrl: imageUrlSchema,
+  imagePublicId: imagePublicIdSchema,
+  attributes: z.array(variantAttributeInputSchema).max(3, "Maximum 3 attributes allowed").optional(),
+  displayName: z.string().max(200).optional(),
+
   _action: z.enum(["create", "update", "delete"]).optional(), // Track action for updates
 });
 

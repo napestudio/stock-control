@@ -12,6 +12,30 @@ interface ProductTableProps {
   isPending?: boolean;
 }
 
+// Helper function to get attribute summary
+function getAttributeSummary(product: ProductWithRelations): string | null {
+  const variants = product.variants;
+  if (!variants || variants.length === 0) return null;
+
+  // Get unique template names from all variants
+  const templateNames = new Set<string>();
+  variants.forEach((variant) => {
+    // DEFENSIVE: Check if attributes exist and is array
+    if (Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr) => {
+        // DEFENSIVE: Check if attr has required properties
+        if (attr?.option?.template?.name) {
+          templateNames.add(attr.option.template.name);
+        }
+      });
+    }
+  });
+
+  if (templateNames.size === 0) return null;
+
+  return Array.from(templateNames).join(" × ");
+}
+
 export default function ProductTable({
   products,
   onView,
@@ -124,11 +148,16 @@ export default function ProductTable({
                     {product.category?.name || "-"}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
                     {product.variants.length} variant
                     {product.variants.length !== 1 ? "s" : ""}
                   </div>
+                  {getAttributeSummary(product) && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {getAttributeSummary(product)}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{totalStock}</div>

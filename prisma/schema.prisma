@@ -107,6 +107,56 @@ model ProductCategory {
   products Product[]
 }
 
+// ======================================
+// VARIANT ATTRIBUTES
+// ======================================
+
+model AttributeTemplate {
+  id           String   @id @default(uuid())
+  name         String   @unique  // "Size", "Color", "Material"
+  description  String?
+  displayOrder Int      @default(0)
+  active       Boolean  @default(true)
+
+  options      AttributeOption[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active])
+  @@index([displayOrder])
+}
+
+model AttributeOption {
+  id               String   @id @default(uuid())
+  templateId       String
+  value            String   // "Small", "Red", "Cotton"
+  displayOrder     Int      @default(0)
+  active           Boolean  @default(true)
+
+  template         AttributeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  variantAttributes VariantAttribute[]
+
+  createdAt        DateTime @default(now())
+
+  @@unique([templateId, value])
+  @@index([templateId])
+  @@index([active])
+}
+
+model VariantAttribute {
+  id        String   @id @default(uuid())
+  variantId String
+  optionId  String
+
+  variant   ProductVariant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  option    AttributeOption  @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, optionId])
+  @@index([variantId])
+  @@index([optionId])
+}
+
 model Product {
   id          String           @id @default(uuid())
   name        String
@@ -136,18 +186,26 @@ model ProductVariant {
   id        String   @id @default(uuid())
   productId String
   sku       String   @unique
-  name      String?
+  name      String?  // KEEP for backward compatibility
+
+  // NEW FIELDS for variant attributes
+  imageUrl      String?  // Variant-specific image
+  imagePublicId String?  // Cloudinary public_id for deletion
+  displayName   String?  // "Medium / Red" - denormalized for performance
 
   price     Decimal  @db.Decimal(10, 2)
   costPrice Decimal  @db.Decimal(10, 2)
 
-  product   Product  @relation(fields: [productId], references: [id])
-  stock     Stock?
-  saleItems SaleItem[]
-  movements StockMovement[]
+  product    Product  @relation(fields: [productId], references: [id])
+  stock      Stock?
+  saleItems  SaleItem[]
+  movements  StockMovement[]
+  attributes VariantAttribute[]  // NEW RELATION
 
   @@index([productId])
   @@index([sku])      // For SKU search optimization
+  @@index([imagePublicId])
+  @@index([displayName])  // For search/filtering
 }
 
 // ======================================

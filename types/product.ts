@@ -7,6 +7,15 @@ type RawProductWithRelations = Prisma.ProductGetPayload<{
     variants: {
       include: {
         stock: true;
+        attributes: {
+          include: {
+            option: {
+              include: {
+                template: true;
+              };
+            };
+          };
+        };
       };
     };
   };
@@ -22,11 +31,20 @@ export type ProductWithRelations = Omit<RawProductWithRelations, 'variants'> & {
   >;
 };
 
-// Variant with stock (serialized)
+// Variant with stock and attributes (serialized)
 export type VariantWithStock = Omit<
   Prisma.ProductVariantGetPayload<{
     include: {
       stock: true;
+      attributes: {
+        include: {
+          option: {
+            include: {
+              template: true;
+            };
+          };
+        };
+      };
     };
   }>,
   'price' | 'costPrice'

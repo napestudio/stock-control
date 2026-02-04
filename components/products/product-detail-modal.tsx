@@ -75,16 +75,21 @@ export default function ProductDetailModal({
 
         {/* Variants table */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Variants</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">
+            Variants ({product.variants.length})
+          </h3>
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    SKU
+                    Image
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Name
+                    Attributes
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    SKU
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
                     Price
@@ -100,11 +105,43 @@ export default function ProductDetailModal({
               <tbody className="bg-white divide-y divide-gray-200">
                 {product.variants.map((variant) => (
                   <tr key={variant.id}>
-                    <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                      {variant.sku}
+                    <td className="px-4 py-2">
+                      <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100">
+                        <Image
+                          src={
+                            variant.imageUrl ||
+                            product.imageUrl ||
+                            "/placeholder-product.png"
+                          }
+                          alt={variant.displayName || variant.name || "Variant"}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      </div>
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-500">
-                      {variant.name || "-"}
+                    <td className="px-4 py-2">
+                      {variant.attributes && Array.isArray(variant.attributes) && variant.attributes.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {variant.attributes.map((attr) => (
+                            attr?.option?.value && (
+                              <span
+                                key={attr.id}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                              >
+                                {attr.option.value}
+                              </span>
+                            )
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">
+                          {variant.displayName || variant.name || "-"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-sm font-mono text-gray-900">
+                      {variant.sku}
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-900 text-right">
                       ${Number(variant.price).toFixed(2)}
@@ -112,7 +149,7 @@ export default function ProductDetailModal({
                     <td className="px-4 py-2 text-sm text-gray-500 text-right">
                       ${Number(variant.costPrice).toFixed(2)}
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-900 text-right">
+                    <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">
                       {variant.stock?.quantity || 0}
                     </td>
                   </tr>

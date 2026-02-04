@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 import Image from "next/image";
 import { uploadProductImage } from "@/app/actions/image-actions";
 
@@ -19,6 +19,23 @@ export default function ImageUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const readerRef = useRef<FileReader | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  // Cleanup effect - revoke data URLs when component unmounts or preview changes
+  useEffect(() => {
+    return () => {
+      // Abort any ongoing FileReader operations
+      if (readerRef.current) {
+        readerRef.current.abort();
+        readerRef.current = null;
+      }
+      // Revoke the preview URL if it's a blob URL
+      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,12 +56,20 @@ export default function ImageUpload({
 
     setError(null);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Clean up previous FileReader if it exists
+    if (readerRef.current) {
+      readerRef.current.abort();
+    }
+
+    // Clean up previous preview URL if it's a blob URL
+    if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+
+    // Use createObjectURL for preview instead of FileReader (much more memory efficient)
+    const objectUrl = URL.createObjectURL(file);
+    previewUrlRef.current = objectUrl;
+    setPreview(objectUrl);
 
     // Upload to Cloudinary via Server Action
     setIsUploading(true);
@@ -55,14 +80,29 @@ export default function ImageUpload({
       const result = await uploadProductImage(formData);
 
       if (result.success && result.imageUrl && result.imagePublicId) {
+        // Clean up the temporary object URL since we now have the Cloudinary URL
+        if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrlRef.current);
+          previewUrlRef.current = null;
+        }
         onImageChange(result.imageUrl, result.imagePublicId);
         setPreview(result.imageUrl);
       } else {
         setError(result.error || "Failed to upload image");
+        // Clean up the object URL on error
+        if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrlRef.current);
+          previewUrlRef.current = null;
+        }
         setPreview(currentImageUrl || null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
+      // Clean up the object URL on error
+      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
       setPreview(currentImageUrl || null);
     } finally {
       setIsUploading(false);
@@ -70,6 +110,11 @@ export default function ImageUpload({
   };
 
   const handleRemove = () => {
+    // Clean up object URL if it exists
+    if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreview(null);
     onImageChange(null, null);
     if (fileInputRef.current) {

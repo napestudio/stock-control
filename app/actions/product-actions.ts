@@ -14,6 +14,47 @@ import { Prisma } from "@prisma/client";
 import { deleteImage } from "@/lib/cloudinary/upload-helper";
 
 /**
+ * Generate display name from variant attributes
+ */
+function generateDisplayName(
+  attributes?: { templateName: string; optionValue: string }[],
+  fallbackName?: string | null
+): string {
+  if (attributes && attributes.length > 0) {
+    return attributes.map((a) => a.optionValue).join(" / ");
+  }
+  return fallbackName || "Default";
+}
+
+/**
+ * Generate SKU from product name and attributes
+ */
+function generateSku(
+  productName: string,
+  attributes?: { optionValue: string }[]
+): string {
+  const prefix = productName
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 10);
+
+  if (!attributes || attributes.length === 0) {
+    return prefix;
+  }
+
+  const suffix = attributes
+    .map((attr) =>
+      attr.optionValue
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 5)
+    )
+    .join("-");
+
+  return `${prefix}-${suffix}`;
+}
+
+/**
  * Create a new product with variants
  */
 export async function createProduct(data: CreateProductInput) {
@@ -71,11 +112,23 @@ export async function createProduct(data: CreateProductInput) {
             name: variant.name,
             price: variant.price,
             costPrice: variant.costPrice,
+            imageUrl: variant.imageUrl || null,
+            imagePublicId: variant.imagePublicId || null,
+            displayName:
+              variant.displayName ||
+              generateDisplayName(variant.attributes, variant.name),
             stock: {
               create: {
                 quantity: 0, // Initial stock is 0
               },
             },
+            attributes: variant.attributes
+              ? {
+                  create: variant.attributes.map((attr) => ({
+                    optionId: attr.optionId,
+                  })),
+                }
+              : undefined,
           })),
         },
       },
@@ -84,6 +137,15 @@ export async function createProduct(data: CreateProductInput) {
         variants: {
           include: {
             stock: true,
+            attributes: {
+              include: {
+                option: {
+                  include: {
+                    template: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -184,6 +246,15 @@ export async function updateProduct(
         variants: {
           include: {
             stock: true,
+            attributes: {
+              include: {
+                option: {
+                  include: {
+                    template: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -200,14 +271,32 @@ export async function updateProduct(
               name: variant.name,
               price: variant.price,
               costPrice: variant.costPrice,
+              imageUrl: variant.imageUrl || null,
+              imagePublicId: variant.imagePublicId || null,
+              displayName:
+                variant.displayName ||
+                generateDisplayName(variant.attributes, variant.name),
               stock: {
                 create: {
                   quantity: 0,
                 },
               },
+              attributes: variant.attributes
+                ? {
+                    create: variant.attributes.map((attr) => ({
+                      optionId: attr.optionId,
+                    })),
+                  }
+                : undefined,
             },
           });
         } else if (variant._action === "update" && variant.id) {
+          // Delete existing attributes
+          await tx.variantAttribute.deleteMany({
+            where: { variantId: variant.id },
+          });
+
+          // Update variant with new attributes
           await tx.productVariant.update({
             where: { id: variant.id },
             data: {
@@ -215,6 +304,18 @@ export async function updateProduct(
               name: variant.name,
               price: variant.price,
               costPrice: variant.costPrice,
+              imageUrl: variant.imageUrl || null,
+              imagePublicId: variant.imagePublicId || null,
+              displayName:
+                variant.displayName ||
+                generateDisplayName(variant.attributes, variant.name),
+              attributes: variant.attributes
+                ? {
+                    create: variant.attributes.map((attr) => ({
+                      optionId: attr.optionId,
+                    })),
+                  }
+                : undefined,
             },
           });
         } else if (variant._action === "delete" && variant.id) {
@@ -374,7 +475,10 @@ export async function getProducts(
       {
         variants: {
           some: {
-            sku: { contains: search, mode: "insensitive" },
+            OR: [
+              { sku: { contains: search, mode: "insensitive" } },
+              { displayName: { contains: search, mode: "insensitive" } },
+            ],
           },
         },
       },
@@ -390,6 +494,15 @@ export async function getProducts(
         variants: {
           include: {
             stock: true,
+            attributes: {
+              include: {
+                option: {
+                  include: {
+                    template: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

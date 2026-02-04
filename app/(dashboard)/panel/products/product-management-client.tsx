@@ -170,33 +170,41 @@ export default function ProductManagementClient({
   }
 
   // Handle create with optimistic update
-  async function handleCreateProduct(data: CreateProductInput) {
+  async function handleCreateProduct(data: CreateProductInput | EditProductInput) {
     const tempId = `temp-${Date.now()}`;
     setModalError(""); // Clear previous modal errors
+
+    // Type guard: in create mode, data should be CreateProductInput
+    const createData = data as CreateProductInput;
 
     startTransition(async () => {
       // Optimistically add product to UI (inside transition)
       const optimisticProduct: ProductWithRelations = {
         id: tempId,
-        name: data.name,
-        description: data.description || null,
-        categoryId: data.categoryId || null,
-        category: data.categoryId
-          ? categories.find((c) => c.id === data.categoryId) || null
+        name: createData.name,
+        description: createData.description || null,
+        categoryId: createData.categoryId || null,
+        category: createData.categoryId
+          ? categories.find((c) => c.id === createData.categoryId) || null
           : null,
-        imageUrl: data.imageUrl || null,
-        imagePublicId: data.imagePublicId || null,
+        imageUrl: createData.imageUrl || null,
+        imagePublicId: createData.imagePublicId || null,
         active: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
-        variants: data.variants.map((v, idx) => ({
+        variants: createData.variants.map((v, idx) => ({
           id: `temp-variant-${idx}`,
           productId: tempId,
           sku: v.sku,
           name: v.name || null,
           price: v.price,
           costPrice: v.costPrice,
+          imageUrl: v.imageUrl || null,
+          imagePublicId: v.imagePublicId || null,
+          displayName: v.displayName || v.name || null,
+          // Use empty array for optimistic update - real data comes from server
+          attributes: [],
           stock: {
             id: `temp-stock-${idx}`,
             productVariantId: `temp-variant-${idx}`,
@@ -213,7 +221,7 @@ export default function ProductManagementClient({
       });
 
       try {
-        await createProduct(data);
+        await createProduct(createData);
         setCreateModalOpen(false);
         setModalError(""); // Clear on success
         await refreshProducts();
