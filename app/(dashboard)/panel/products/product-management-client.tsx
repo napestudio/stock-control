@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, useOptimistic, useTransition } from "react";
-import type { ProductCategory } from "@prisma/client";
-import type { ProductWithRelations, OptimisticAction, PaginationInfo } from "@/types/product";
+import {
+  createProduct,
+  getProducts,
+  softDeleteProduct,
+  updateProduct,
+} from "@/app/actions/product-actions";
+import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
+import ProductDetailModal from "@/components/products/product-detail-modal";
+import ProductForm from "@/components/products/product-form";
+import ProductTable from "@/components/products/product-table";
+import Sidebar from "@/components/ui/sidebar";
 import type {
   CreateProductInput,
   EditProductInput,
 } from "@/lib/validations/product-schema";
-import ProductTable from "@/components/products/product-table";
-import ProductForm from "@/components/products/product-form";
-import ProductDetailModal from "@/components/products/product-detail-modal";
-import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
-import Modal from "@/components/ui/modal";
-import Sidebar from "@/components/ui/sidebar";
-import {
-  createProduct,
-  updateProduct,
-  softDeleteProduct,
-  getProducts,
-} from "@/app/actions/product-actions";
+import type {
+  OptimisticAction,
+  PaginationInfo,
+  ProductWithRelations,
+} from "@/types/product";
+import type { ProductCategory } from "@prisma/client";
+import { useOptimistic, useState, useTransition } from "react";
 
 type FilterType = "all" | "active" | "inactive";
 
@@ -35,7 +38,8 @@ export default function ProductManagementClient({
 }: ProductManagementClientProps) {
   const [products, setProducts] =
     useState<ProductWithRelations[]>(initialProducts);
-  const [pagination, setPagination] = useState<PaginationInfo>(initialPagination);
+  const [pagination, setPagination] =
+    useState<PaginationInfo>(initialPagination);
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
@@ -89,7 +93,7 @@ export default function ProductManagementClient({
         categoryFilter || undefined,
         searchQuery || undefined,
         currentPage,
-        50
+        50,
       );
       setProducts(result.products);
       setPagination(result.pagination);
@@ -111,7 +115,7 @@ export default function ProductManagementClient({
           categoryFilter || undefined,
           searchQuery || undefined,
           1,
-          50
+          50,
         );
         setProducts(result.products);
         setPagination(result.pagination);
@@ -134,7 +138,7 @@ export default function ProductManagementClient({
           categoryId || undefined,
           searchQuery || undefined,
           1,
-          50
+          50,
         );
         setProducts(result.products);
         setPagination(result.pagination);
@@ -157,7 +161,7 @@ export default function ProductManagementClient({
           categoryFilter || undefined,
           query || undefined,
           1,
-          50
+          50,
         );
         setProducts(result.products);
         setPagination(result.pagination);
@@ -170,7 +174,9 @@ export default function ProductManagementClient({
   }
 
   // Handle create with optimistic update
-  async function handleCreateProduct(data: CreateProductInput | EditProductInput) {
+  async function handleCreateProduct(
+    data: CreateProductInput | EditProductInput,
+  ) {
     const tempId = `temp-${Date.now()}`;
     setModalError(""); // Clear previous modal errors
 
@@ -443,8 +449,11 @@ export default function ProductManagementClient({
             <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
               <div className="text-sm text-gray-700">
                 Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
-                {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{" "}
-                {pagination.totalCount} products
+                {Math.min(
+                  pagination.page * pagination.pageSize,
+                  pagination.totalCount,
+                )}{" "}
+                of {pagination.totalCount} products
               </div>
 
               <div className="flex gap-2">
@@ -459,13 +468,15 @@ export default function ProductManagementClient({
                           categoryFilter || undefined,
                           searchQuery || undefined,
                           newPage,
-                          50
+                          50,
                         );
                         setProducts(result.products);
                         setPagination(result.pagination);
                       } catch (err) {
                         setPageError(
-                          err instanceof Error ? err.message : "Failed to fetch products"
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to fetch products",
                         );
                       }
                     });
@@ -491,13 +502,15 @@ export default function ProductManagementClient({
                           categoryFilter || undefined,
                           searchQuery || undefined,
                           newPage,
-                          50
+                          50,
                         );
                         setProducts(result.products);
                         setPagination(result.pagination);
                       } catch (err) {
                         setPageError(
-                          err instanceof Error ? err.message : "Failed to fetch products"
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to fetch products",
                         );
                       }
                     });
