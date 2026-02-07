@@ -43,32 +43,32 @@ export default function ProductDetailModal({
         <div className="space-y-3">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-500">Description</h3>
+              <h3 className="text-sm font-medium text-gray-500">Descripción</h3>
               <p className="mt-1 text-sm text-gray-900">
-                {product.description || "No description"}
+                {product.description || "Sin descripción"}
               </p>
             </div>
             <div>
               {product.active ? (
-                <Badge variant="success">Active</Badge>
+                <Badge variant="success">Activo</Badge>
               ) : (
-                <Badge variant="neutral">Inactive</Badge>
+                <Badge variant="neutral">Inactivo</Badge>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Category</h3>
+              <h3 className="text-sm font-medium text-gray-500">Categoría</h3>
               <p className="mt-1 text-sm text-gray-900">
-                {product.category?.name || "Uncategorized"}
+                {product.category?.name || "Sin categoría"}
               </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">
-                Total Stock
+                Stock Total
               </h3>
-              <p className="mt-1 text-sm text-gray-900">{totalStock} units</p>
+              <p className="mt-1 text-sm text-gray-900">{totalStock} unidades</p>
             </div>
           </div>
         </div>
@@ -76,26 +76,26 @@ export default function ProductDetailModal({
         {/* Variants table */}
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Variants ({product.variants.length})
+            Variantes ({product.variants.length})
           </h3>
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Image
+                    Imagen
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                    Attributes
+                    Atributos
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     SKU
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Price
+                    Precio
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                    Cost
+                    Costo
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
                     Stock
@@ -165,13 +165,13 @@ export default function ProductDetailModal({
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Close
+            Cerrar
           </button>
           <button
             onClick={onEdit}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
           >
-            Edit Product
+            Editar Producto
           </button>
         </div>
       </div>

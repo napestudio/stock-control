@@ -28,8 +28,8 @@ export default async function UsersPage() {
   return (
     <div>
       <DashboardHeader
-        title="User Management"
-        subtitle="Manage system users and roles"
+        title="Gestión de Usuarios"
+        subtitle="Gestiona usuarios del sistema y roles"
         userName={session?.user?.name || session?.user?.email || "Admin"}
       />
       <UserManagementClient initialUsers={users} roles={roles} />

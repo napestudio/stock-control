@@ -357,7 +357,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            All
+            Todos
           </button>
           <button
             onClick={() => handleFilterChange("active")}
@@ -367,7 +367,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Active
+            Activos
           </button>
           <button
             onClick={() => handleFilterChange("inactive")}
@@ -377,7 +377,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Inactive
+            Inactivos
           </button>
 
           {/* Category filter */}
@@ -386,7 +386,7 @@ export default function ProductManagementClient({
             onChange={(e) => handleCategoryFilterChange(e.target.value)}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">All Categories</option>
+            <option value="">Todas las Categorías</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
@@ -399,7 +399,7 @@ export default function ProductManagementClient({
           {/* Search */}
           <input
             type="text"
-            placeholder="Search products or SKU..."
+            placeholder="Buscar productos o SKU..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:w-64"
@@ -423,7 +423,7 @@ export default function ProductManagementClient({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            New Product
+            Nuevo Producto
           </button>
         </div>
       </div>
@@ -432,7 +432,7 @@ export default function ProductManagementClient({
       {isPending && products.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-sm text-gray-500">Loading products...</p>
+          <p className="mt-2 text-sm text-gray-500">Cargando productos...</p>
         </div>
       ) : (
         <>

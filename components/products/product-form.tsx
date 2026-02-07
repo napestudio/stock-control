@@ -105,9 +105,15 @@ export default function ProductForm({
     name: "variants",
   });
 
-  // Watch product name and image URL
+  // Watch product name, image URL, and category
   const currentImageUrl = useWatch({ control, name: "imageUrl" });
   const productName = useWatch({ control, name: "name" });
+  const selectedCategoryId = useWatch({ control, name: "categoryId" });
+
+  // Resolve category name from category ID
+  const categoryName = selectedCategoryId
+    ? categories.find(c => c.id === selectedCategoryId)?.name
+    : null;
 
   // Handle image change callback
   const handleImageChange = (imageUrl: string | null, imagePublicId: string | null) => {
@@ -223,23 +229,23 @@ export default function ProductForm({
       )}
 
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900">Product Information</h3>
+        <h3 className="text-lg font-medium text-gray-900">Información del Producto</h3>
 
         <FormInput
-          label="Product Name"
+          label="Nombre del Producto"
           {...register("name")}
           error={errors.name?.message}
           required
-          placeholder="e.g., T-Shirt"
+          placeholder="ej., Camiseta"
         />
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <label className="block text-sm font-medium text-gray-700">Descripción</label>
           <textarea
             {...register("description")}
             rows={3}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Optional product description"
+            placeholder="Descripción opcional del producto"
           />
           {errors.description && (
             <p className="text-sm text-red-600">{errors.description.message}</p>
@@ -247,7 +253,7 @@ export default function ProductForm({
         </div>
 
         <FormSelect
-          label="Category"
+          label="Categoría"
           {...register("categoryId")}
           options={categories.map((cat) => ({
             value: cat.id,
@@ -272,7 +278,7 @@ export default function ProductForm({
               {...register("active")}
             />
             <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
-              Active
+              Activo
             </label>
           </div>
         )}
@@ -281,7 +287,7 @@ export default function ProductForm({
       {/* Variants */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Variants</h3>
+          <h3 className="text-lg font-medium text-gray-900">Variantes</h3>
           {mode === "create" && attributeTemplates.length > 0 && (
             <div className="flex gap-2">
               <button
@@ -306,7 +312,7 @@ export default function ProductForm({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                Attribute-Based
+                Basado en Atributos
               </button>
             </div>
           )}
@@ -321,6 +327,7 @@ export default function ProductForm({
           <VariantGenerator
             templates={attributeTemplates}
             productName={productName || ""}
+            categoryName={categoryName}
             onVariantsGenerated={handleVariantsGenerated}
             disabled={isPending}
           />
@@ -336,7 +343,7 @@ export default function ProductForm({
                 disabled={isPending}
                 className="text-sm text-indigo-600 hover:text-indigo-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                + Add Variant
+                + Agregar Variante
               </button>
             </div>
 
@@ -348,7 +355,7 @@ export default function ProductForm({
                 >
                   <div className="flex justify-between items-start">
                     <h4 className="text-sm font-medium text-gray-700">
-                      Variant {index + 1}
+                      Variante {index + 1}
                     </h4>
                     {fields.length > 1 && (
                       <button
@@ -357,31 +364,32 @@ export default function ProductForm({
                         disabled={isPending}
                         className="text-red-600 hover:text-red-900 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Remove
+                        Quitar
                       </button>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <FormInput
-                      label="SKU"
+                      label="SKU (Auto-generated)"
                       {...register(`variants.${index}.sku`)}
                       error={errors.variants?.[index]?.sku?.message}
                       required
-                      placeholder="e.g., TS-BLK-M"
-                      disabled={isPending}
+                      placeholder="Auto-generated on save"
+                      disabled={true}
+                      className="bg-gray-100 cursor-not-allowed"
                     />
 
                     <FormInput
-                      label="Variant Name"
+                      label="Nombre de Variante"
                       {...register(`variants.${index}.name`)}
                       error={errors.variants?.[index]?.name?.message}
-                      placeholder="e.g., Black - Medium"
+                      placeholder="ej., Negro - Mediano"
                       disabled={isPending}
                     />
 
                     <FormInput
-                      label="Price"
+                      label="Precio"
                       type="number"
                       step="0.01"
                       {...register(`variants.${index}.price`, {
@@ -394,7 +402,7 @@ export default function ProductForm({
                     />
 
                     <FormInput
-                      label="Cost Price"
+                      label="Precio de Costo"
                       type="number"
                       step="0.01"
                       {...register(`variants.${index}.costPrice`, {
@@ -421,7 +429,7 @@ export default function ProductForm({
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           disabled={isPending}
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
@@ -430,11 +438,11 @@ export default function ProductForm({
         >
           {isPending
             ? mode === "create"
-              ? "Creating..."
-              : "Saving..."
+              ? "Creando..."
+              : "Guardando..."
             : mode === "create"
-              ? "Create Product"
-              : "Save Changes"}
+              ? "Crear Producto"
+              : "Guardar Cambios"}
         </button>
       </div>
     </form>
