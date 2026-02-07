@@ -158,7 +158,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            All
+            Todos
           </button>
           <button
             onClick={() => handleFilterChange("active")}
@@ -168,7 +168,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Active
+            Activos
           </button>
           <button
             onClick={() => handleFilterChange("inactive")}
@@ -178,7 +178,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Inactive
+            Inactivos
           </button>
         </div>
 
@@ -199,7 +199,7 @@ export default function UserManagementClient({
               d="M12 4v16m8-8H4"
             />
           </svg>
-          New User
+          Nuevo Usuario
         </button>
       </div>
 

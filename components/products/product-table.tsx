@@ -59,9 +59,9 @@ export default function ProductTable({
             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No products</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No hay productos</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Get started by creating a new product.
+          Comienza creando un nuevo producto.
         </p>
       </div>
     );
@@ -77,22 +77,22 @@ export default function ProductTable({
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Product
+              Producto
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Category
+              Categoría
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Variants
+              Variantes
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Total Stock
+              Stock Total
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
+              Estado
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+              Acciones
             </th>
           </tr>
         </thead>
@@ -131,7 +131,7 @@ export default function ProductTable({
                         {product.name}
                         {isTemp && (
                           <span className="ml-2 text-xs text-blue-600">
-                            (Saving...)
+                            (Guardando...)
                           </span>
                         )}
                       </div>
@@ -150,7 +150,7 @@ export default function ProductTable({
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
-                    {product.variants.length} variant
+                    {product.variants.length} variante
                     {product.variants.length !== 1 ? "s" : ""}
                   </div>
                   {getAttributeSummary(product) && (
@@ -164,9 +164,9 @@ export default function ProductTable({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {product.active ? (
-                    <Badge variant="success">Active</Badge>
+                    <Badge variant="success">Activo</Badge>
                   ) : (
-                    <Badge variant="neutral">Inactive</Badge>
+                    <Badge variant="neutral">Inactivo</Badge>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -177,7 +177,7 @@ export default function ProductTable({
                     <button
                       onClick={() => onEdit(product)}
                       className="text-indigo-600 hover:text-indigo-900"
-                      title="Edit product"
+                      title="Editar producto"
                       disabled={isTemp}
                     >
                       <svg
@@ -197,7 +197,7 @@ export default function ProductTable({
                     <button
                       onClick={() => onDelete(product)}
                       className="text-red-600 hover:text-red-900"
-                      title="Delete product"
+                      title="Eliminar producto"
                       disabled={isTemp}
                     >
                       <svg

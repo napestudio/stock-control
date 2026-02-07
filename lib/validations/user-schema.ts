@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const createUserSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  roleId: z.string().uuid("Invalid role"),
+  name: z.string().min(1, "El nombre es obligatorio").max(100),
+  roleId: z.string().uuid("Rol inválido"),
 });
 
 export const editUserSchema = z.object({
@@ -17,14 +17,14 @@ export const changePasswordSchema = z
     currentPassword: z.string().optional(),
     newPassword: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Must contain uppercase letter")
-      .regex(/[a-z]/, "Must contain lowercase letter")
-      .regex(/[0-9]/, "Must contain number"),
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
+      .regex(/[A-Z]/, "Debe contener una letra mayúscula")
+      .regex(/[a-z]/, "Debe contener una letra minúscula")
+      .regex(/[0-9]/, "Debe contener un número"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match",
+    message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
 

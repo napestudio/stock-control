@@ -27,22 +27,30 @@ function generateDisplayName(
 }
 
 /**
- * Generate SKU from product name and attributes
+ * Generate SKU from category, product name, and attributes
+ * Format: CATEGORY-PRODUCT-VARIANT
+ * Example: SH-TSHIRT-BLK-MED
  */
 function generateSku(
+  categoryName: string | null | undefined,
   productName: string,
   attributes?: { optionValue: string }[]
 ): string {
-  const prefix = productName
+  // Category prefix: First 2 letters, pad with X if needed, or "XX" if no category
+  const categoryPrefix = categoryName
+    ? categoryName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 2).padEnd(2, "X")
+    : "XX";
+
+  const productPrefix = productName
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, 10);
 
   if (!attributes || attributes.length === 0) {
-    return prefix;
+    return `${categoryPrefix}-${productPrefix}`;
   }
 
-  const suffix = attributes
+  const attributeSuffix = attributes
     .map((attr) =>
       attr.optionValue
         .toUpperCase()
@@ -51,7 +59,39 @@ function generateSku(
     )
     .join("-");
 
-  return `${prefix}-${suffix}`;
+  return `${categoryPrefix}-${productPrefix}-${attributeSuffix}`;
+}
+
+/**
+ * Ensure SKU uniqueness by appending numeric suffix if needed
+ */
+async function ensureUniqueSku(
+  baseSku: string,
+  excludeProductId?: string
+): Promise<string> {
+  let sku = baseSku;
+  let counter = 2;
+
+  while (true) {
+    const existing = await prisma.productVariant.findUnique({
+      where: { sku },
+      select: { productId: true },
+    });
+
+    // No conflict, or conflict is with same product (during edit)
+    if (!existing || (excludeProductId && existing.productId === excludeProductId)) {
+      return sku;
+    }
+
+    // Conflict: append counter
+    sku = `${baseSku}-${counter}`;
+    counter++;
+
+    // Safety limit to prevent infinite loop
+    if (counter > 100) {
+      throw new Error("Unable to generate unique SKU after 100 attempts");
+    }
+  }
 }
 
 /**
@@ -78,25 +118,28 @@ export async function createProduct(data: CreateProductInput) {
     name: validated.name
   });
 
-  // Check for SKU uniqueness
-  const existingSkus = await prisma.productVariant.findMany({
-    where: {
-      sku: {
-        in: validated.variants.map((v) => v.sku),
-      },
-    },
-    select: { sku: true },
-  });
-
-  if (existingSkus.length > 0) {
-    throw new Error(
-      `SKU already exists: ${existingSkus.map((s) => s.sku).join(", ")}`
-    );
-  }
-
   // Create product with variants in transaction
   const product = await prisma.$transaction(async (tx) => {
     console.log("💾 Saving to database with categoryId:", validated.categoryId || null);
+
+    // Fetch category name if categoryId is provided
+    let categoryName: string | null = null;
+    if (validated.categoryId) {
+      const category = await tx.productCategory.findUnique({
+        where: { id: validated.categoryId },
+        select: { name: true },
+      });
+      categoryName = category?.name || null;
+    }
+
+    // Generate unique SKUs for all variants
+    const variantsWithSkus = await Promise.all(
+      validated.variants.map(async (variant) => {
+        const baseSku = generateSku(categoryName, validated.name, variant.attributes);
+        const uniqueSku = await ensureUniqueSku(baseSku);
+        return { ...variant, sku: uniqueSku };
+      })
+    );
 
     const newProduct = await tx.product.create({
       data: {
@@ -107,7 +150,7 @@ export async function createProduct(data: CreateProductInput) {
         imageUrl: validated.imageUrl || null,
         imagePublicId: validated.imagePublicId || null,
         variants: {
-          create: validated.variants.map((variant) => ({
+          create: variantsWithSkus.map((variant) => ({
             sku: variant.sku,
             name: variant.name,
             price: variant.price,
@@ -188,33 +231,16 @@ export async function updateProduct(
   // Validate input
   const validated = editProductSchema.partial().parse({ ...data, id });
 
-  // If variants are being updated, check SKU uniqueness
-  if (validated.variants) {
-    const newSkus = validated.variants
-      .filter((v) => v._action !== "delete")
-      .map((v) => v.sku);
-
-    const existingSkus = await prisma.productVariant.findMany({
-      where: {
-        sku: { in: newSkus },
-        productId: { not: id },
-      },
-      select: { sku: true },
-    });
-
-    if (existingSkus.length > 0) {
-      throw new Error(
-        `SKU already exists: ${existingSkus.map((s) => s.sku).join(", ")}`
-      );
-    }
-  }
-
   // Update product with variants in transaction
   const product = await prisma.$transaction(async (tx) => {
-    // Fetch current product to check for existing image
+    // Fetch current product to check for existing image and get name/category for SKU generation
     const currentProduct = await tx.product.findUnique({
       where: { id },
-      select: { imagePublicId: true },
+      select: {
+        imagePublicId: true,
+        name: true,
+        categoryId: true,
+      },
     });
 
     // Prepare product update data
@@ -262,12 +288,30 @@ export async function updateProduct(
 
     // Handle variant updates if provided
     if (validated.variants) {
+      // Fetch category name for SKU generation
+      let categoryName: string | null = null;
+      const categoryIdToUse = validated.categoryId !== undefined ? validated.categoryId : currentProduct?.categoryId;
+      if (categoryIdToUse) {
+        const category = await tx.productCategory.findUnique({
+          where: { id: categoryIdToUse },
+          select: { name: true },
+        });
+        categoryName = category?.name || null;
+      }
+
+      // Get product name (use updated name if provided, otherwise use current)
+      const productName = validated.name || currentProduct?.name || "";
+
       for (const variant of validated.variants) {
         if (variant._action === "create") {
+          // Generate unique SKU for new variant
+          const baseSku = generateSku(categoryName, productName, variant.attributes);
+          const uniqueSku = await ensureUniqueSku(baseSku, id);
+
           await tx.productVariant.create({
             data: {
               productId: id,
-              sku: variant.sku,
+              sku: uniqueSku,
               name: variant.name,
               price: variant.price,
               costPrice: variant.costPrice,

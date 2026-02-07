@@ -22,8 +22,8 @@ export default async function ProductsPage() {
   return (
     <div>
       <DashboardHeader
-        title="Product Management"
-        subtitle="Manage products, variants, and inventory"
+        title="Gestión de Productos"
+        subtitle="Gestiona productos, variantes e inventario"
         userName={session?.user?.name || session?.user?.email || "Admin"}
       />
       <ProductManagementClient

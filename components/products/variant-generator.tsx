@@ -8,6 +8,7 @@ import ImageUpload from "./image-upload";
 interface Props {
   templates: AttributeTemplateWithOptions[];
   productName: string;
+  categoryName?: string | null;
   onVariantsGenerated: (variants: GeneratedVariant[]) => void;
   disabled?: boolean;
 }
@@ -15,6 +16,7 @@ interface Props {
 export default function VariantGenerator({
   templates,
   productName,
+  categoryName,
   onVariantsGenerated,
   disabled,
 }: Props) {
@@ -41,7 +43,7 @@ export default function VariantGenerator({
       setSelectedOptions(newOptions);
     } else {
       if (selectedTemplates.length >= 3) {
-        alert("Maximum 3 attributes allowed");
+        alert("Máximo 3 atributos permitidos");
         return;
       }
       setSelectedTemplates([...selectedTemplates, templateId]);
@@ -66,7 +68,7 @@ export default function VariantGenerator({
 
   const generateVariants = () => {
     if (!productName.trim()) {
-      alert("Please enter a product name first");
+      alert("Por favor ingresa primero un nombre de producto");
       return;
     }
 
@@ -88,7 +90,7 @@ export default function VariantGenerator({
 
     // Validate all templates have options selected
     if (selectedData.some((d) => d.options.length === 0)) {
-      alert("Please select at least one option for each attribute");
+      alert("Por favor selecciona al menos una opción para cada atributo");
       return;
     }
 
@@ -100,7 +102,7 @@ export default function VariantGenerator({
       current: { templateId: string; templateName: string; optionId: string; optionValue: string }[]
     ) {
       if (index === selectedData.length) {
-        const sku = generateSku(productName, current.map((c) => ({ optionValue: c.optionValue })));
+        const sku = generateSku(categoryName, productName, current.map((c) => ({ optionValue: c.optionValue })));
         const displayName = current.map((c) => c.optionValue).join(" / ");
 
         variants.push({
@@ -132,29 +134,38 @@ export default function VariantGenerator({
     }
 
     if (variants.length > 100) {
-      alert("Too many variants (max 100). Please reduce options.");
+      alert("Demasiadas variantes (máx. 100). Por favor reduce las opciones.");
       return;
     }
 
     if (variants.length === 0) {
-      alert("No variants generated. Please select attributes and options.");
+      alert("No se generaron variantes. Por favor selecciona atributos y opciones.");
       return;
     }
 
     setGeneratedVariants(variants);
   };
 
-  function generateSku(productName: string, attributes: { optionValue: string }[]): string {
-    const prefix = productName
+  function generateSku(
+    categoryName: string | null | undefined,
+    productName: string,
+    attributes: { optionValue: string }[]
+  ): string {
+    // Category prefix: First 2 letters, pad with X if needed, or "XX" if no category
+    const categoryPrefix = categoryName
+      ? categoryName.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 2).padEnd(2, "X")
+      : "XX";
+
+    const productPrefix = productName
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "")
       .slice(0, 10);
 
-    const suffix = attributes
+    const attributeSuffix = attributes
       .map((attr) => attr.optionValue.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5))
       .join("-");
 
-    return `${prefix}-${suffix}`;
+    return `${categoryPrefix}-${productPrefix}-${attributeSuffix}`;
   }
 
   const handleVariantChange = useCallback((index: number, field: string, value: string | number | null) => {
@@ -188,7 +199,7 @@ export default function VariantGenerator({
 
   const handleUseVariants = useCallback(() => {
     if (generatedVariants.length === 0) {
-      alert("No variants to use");
+      alert("No hay variantes para usar");
       return;
     }
     // Pass variants to parent
@@ -206,9 +217,9 @@ export default function VariantGenerator({
   if (templates.length === 0) {
     return (
       <div className="border-2 border-dashed rounded-lg p-8 text-center">
-        <p className="text-gray-500 mb-2">No attribute templates available</p>
+        <p className="text-gray-500 mb-2">No hay plantillas de atributos disponibles</p>
         <p className="text-sm text-gray-400">
-          Create attribute templates first in Settings → Attributes
+          Crea primero plantillas de atributos en Configuración → Atributos
         </p>
       </div>
     );
@@ -218,7 +229,7 @@ export default function VariantGenerator({
     <div className="space-y-6">
       {/* Step 1: Select Attributes */}
       <div className="space-y-3">
-        <h4 className="font-medium text-gray-900">Step 1: Select Attributes (max 3)</h4>
+        <h4 className="font-medium text-gray-900">Paso 1: Selecciona Atributos (máx. 3)</h4>
         <div className="grid grid-cols-3 gap-3">
           {templates.map((template) => (
             <button
@@ -241,7 +252,7 @@ export default function VariantGenerator({
       {/* Step 2: Select Options */}
       {selectedTemplates.length > 0 && (
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900">Step 2: Select Options</h4>
+          <h4 className="font-medium text-gray-900">Paso 2: Selecciona Opciones</h4>
           {selectedTemplates.map((templateId) => {
             const template = templates.find((t) => t.id === templateId)!;
             return (
@@ -271,7 +282,7 @@ export default function VariantGenerator({
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base Price
+                Precio Base
               </label>
               <input
                 type="number"
@@ -286,7 +297,7 @@ export default function VariantGenerator({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base Cost
+                Costo Base
               </label>
               <input
                 type="number"
@@ -303,10 +314,10 @@ export default function VariantGenerator({
 
           <div className="flex items-center justify-between pt-2">
             <p className="text-sm text-gray-600">
-              Will generate <strong>{calculateEstimatedVariants()}</strong> variants
+              Generará <strong>{calculateEstimatedVariants()}</strong> variantes
             </p>
             <Button type="button" onClick={generateVariants} disabled={disabled}>
-              Generate Variants
+              Generar Variantes
             </Button>
           </div>
         </div>
@@ -317,7 +328,7 @@ export default function VariantGenerator({
         <div className="space-y-4 border-t pt-6">
           <div className="flex items-center justify-between">
             <h4 className="font-medium text-gray-900">
-              Step 3: Review & Edit ({generatedVariants.length} variants)
+              Paso 3: Revisar y Editar ({generatedVariants.length} variantes)
             </h4>
             <div className="flex gap-2">
               <Button
@@ -327,7 +338,7 @@ export default function VariantGenerator({
                 onClick={handleApplyPriceToAll}
                 disabled={disabled}
               >
-                Apply Price to All
+                Aplicar Precio a Todos
               </Button>
               <Button
                 type="button"
@@ -336,7 +347,7 @@ export default function VariantGenerator({
                 onClick={handleApplyCostToAll}
                 disabled={disabled}
               >
-                Apply Cost to All
+                Aplicar Costo a Todos
               </Button>
             </div>
           </div>
@@ -347,7 +358,7 @@ export default function VariantGenerator({
                 <div className="flex gap-4 items-start">
                   <div className="flex-1 space-y-3">
                     <div>
-                      <label className="text-xs font-medium text-gray-600">Attributes</label>
+                      <label className="text-xs font-medium text-gray-600">Atributos</label>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {variant.attributes.map((attr) => (
                           <span
@@ -373,7 +384,7 @@ export default function VariantGenerator({
                       </div>
 
                       <div>
-                        <label className="text-xs font-medium text-gray-600">Price</label>
+                        <label className="text-xs font-medium text-gray-600">Precio</label>
                         <input
                           type="number"
                           value={variant.price}
@@ -388,7 +399,7 @@ export default function VariantGenerator({
                       </div>
 
                       <div>
-                        <label className="text-xs font-medium text-gray-600">Cost</label>
+                        <label className="text-xs font-medium text-gray-600">Costo</label>
                         <input
                           type="number"
                           value={variant.costPrice}
@@ -406,7 +417,7 @@ export default function VariantGenerator({
 
                   <div className="w-24">
                     <label className="text-xs font-medium text-gray-600 block mb-1">
-                      Image
+                      Imagen
                     </label>
                     <ImageUpload
                       currentImageUrl={variant.imageUrl}
@@ -426,7 +437,7 @@ export default function VariantGenerator({
                     disabled={disabled}
                     className="mt-6"
                   >
-                    Delete
+                    Eliminar
                   </Button>
                 </div>
               </div>
@@ -439,7 +450,7 @@ export default function VariantGenerator({
             disabled={disabled}
             className="w-full"
           >
-            Use These Variants ({generatedVariants.length})
+            Usar Estas Variantes ({generatedVariants.length})
           </Button>
         </div>
       )}

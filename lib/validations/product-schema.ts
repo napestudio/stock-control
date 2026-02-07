@@ -17,12 +17,12 @@ const ACCEPTED_IMAGE_TYPES = [
 export const imageFileSchema = z
   .instanceof(File)
   .refine((file) => file.size <= MAX_IMAGE_SIZE, {
-    message: 'Image must be less than 5MB',
+    message: 'La imagen debe ser menor a 5MB',
   })
   .refine(
     (file) => ACCEPTED_IMAGE_TYPES.includes(file.type as typeof ACCEPTED_IMAGE_TYPES[number]),
     {
-      message: 'Only .jpg, .jpeg, .png and .webp formats are supported',
+      message: 'Solo se admiten formatos .jpg, .jpeg, .png y .webp',
     }
   )
   .optional();
@@ -30,7 +30,7 @@ export const imageFileSchema = z
 // Image URL schema for server-side validation - allow empty, null, undefined
 export const imageUrlSchema = z
   .union([
-    z.string().url().regex(/^https:\/\/res\.cloudinary\.com/, 'Must be a Cloudinary URL'),
+    z.string().url().regex(/^https:\/\/res\.cloudinary\.com/, 'Debe ser una URL de Cloudinary'),
     z.literal(''),
     z.null(),
     z.undefined()
@@ -48,16 +48,16 @@ export const imagePublicIdSchema = z
 
 // Product variant schema (nested within product)
 export const variantSchema = z.object({
-  id: z.string().regex(UUID_REGEX, "Invalid ID").optional(), // Optional for new variants
-  sku: z.string().min(1, "SKU is required").max(50, "SKU must be 50 characters or less"),
-  name: z.string().max(100, "Variant name must be 100 characters or less").optional(),
-  price: z.number().min(0, "Price must be a positive number"),
-  costPrice: z.number().min(0, "Cost price must be a positive number"),
+  id: z.string().regex(UUID_REGEX, "ID inválido").optional(), // Optional for new variants
+  sku: z.string().min(1, "El SKU es obligatorio").max(50, "El SKU debe tener 50 caracteres o menos"),
+  name: z.string().max(100, "El nombre de variante debe tener 100 caracteres o menos").optional(),
+  price: z.number().min(0, "El precio debe ser un número positivo"),
+  costPrice: z.number().min(0, "El precio de costo debe ser un número positivo"),
 
   // NEW FIELDS for variant attributes
   imageUrl: imageUrlSchema,
   imagePublicId: imagePublicIdSchema,
-  attributes: z.array(variantAttributeInputSchema).max(3, "Maximum 3 attributes allowed").optional(),
+  attributes: z.array(variantAttributeInputSchema).max(3, "Máximo 3 atributos permitidos").optional(),
   displayName: z.string().max(200).optional(),
 
   _action: z.enum(["create", "update", "delete"]).optional(), // Track action for updates
@@ -65,26 +65,26 @@ export const variantSchema = z.object({
 
 // Create product schema
 export const createProductSchema = z.object({
-  name: z.string().min(1, "Product name is required").max(200, "Product name must be 200 characters or less"),
-  description: z.string().max(500, "Description must be 500 characters or less").optional(),
+  name: z.string().min(1, "El nombre del producto es obligatorio").max(200, "El nombre del producto debe tener 200 caracteres o menos"),
+  description: z.string().max(500, "La descripción debe tener 500 caracteres o menos").optional(),
   categoryId: z.string()
     .optional()
     .transform(val => !val || val === "" ? undefined : val)
-    .refine(val => !val || UUID_REGEX.test(val), "Invalid category"),
-  variants: z.array(variantSchema).min(1, "At least one variant is required"),
+    .refine(val => !val || UUID_REGEX.test(val), "Categoría inválida"),
+  variants: z.array(variantSchema).min(1, "Se requiere al menos una variante"),
   imageUrl: imageUrlSchema,
   imagePublicId: imagePublicIdSchema,
 });
 
 // Edit product schema
 export const editProductSchema = z.object({
-  id: z.string().regex(UUID_REGEX, "Invalid ID"),
+  id: z.string().regex(UUID_REGEX, "ID inválido"),
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(500).nullable().optional(),
   categoryId: z.string()
     .optional()
     .transform(val => !val || val === "" ? undefined : val)
-    .refine(val => !val || UUID_REGEX.test(val), "Invalid category"),
+    .refine(val => !val || UUID_REGEX.test(val), "Categoría inválida"),
   active: z.boolean().optional(),
   variants: z.array(variantSchema).optional(),
   imageUrl: imageUrlSchema,
@@ -93,7 +93,7 @@ export const editProductSchema = z.object({
 
 // Category schema
 export const createCategorySchema = z.object({
-  name: z.string().min(1, "Category name is required").max(100, "Category name must be 100 characters or less"),
+  name: z.string().min(1, "El nombre de categoría es obligatorio").max(100, "El nombre de categoría debe tener 100 caracteres o menos"),
 });
 
 export const editCategorySchema = z.object({
