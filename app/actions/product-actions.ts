@@ -163,6 +163,7 @@ export async function createProduct(data: CreateProductInput) {
             stock: {
               create: {
                 quantity: 0, // Initial stock is 0
+                minimumStock: 0,
               },
             },
             attributes: variant.attributes
@@ -323,6 +324,7 @@ export async function updateProduct(
               stock: {
                 create: {
                   quantity: 0,
+                  minimumStock: 0,
                 },
               },
               attributes: variant.attributes

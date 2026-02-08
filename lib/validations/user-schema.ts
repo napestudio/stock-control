@@ -3,6 +3,7 @@ import { z } from "zod";
 export const createUserSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(100),
   roleId: z.string().uuid("Rol inválido"),
+  active: z.boolean().optional(),
 });
 
 export const editUserSchema = z.object({
