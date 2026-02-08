@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 type RawProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: true;
+
     variants: {
       include: {
         stock: true;
@@ -22,9 +23,9 @@ type RawProductWithRelations = Prisma.ProductGetPayload<{
 }>;
 
 // Serialized product for client (Decimal → number)
-export type ProductWithRelations = Omit<RawProductWithRelations, 'variants'> & {
+export type ProductWithRelations = Omit<RawProductWithRelations, "variants"> & {
   variants: Array<
-    Omit<RawProductWithRelations['variants'][0], 'price' | 'costPrice'> & {
+    Omit<RawProductWithRelations["variants"][0], "price" | "costPrice"> & {
       price: number;
       costPrice: number;
     }
@@ -47,7 +48,7 @@ export type VariantWithStock = Omit<
       };
     };
   }>,
-  'price' | 'costPrice'
+  "price" | "costPrice"
 > & {
   price: number;
   costPrice: number;

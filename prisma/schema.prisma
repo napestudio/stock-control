@@ -216,10 +216,13 @@ model Stock {
   id               String         @id @default(uuid())
   productVariantId String         @unique
   quantity         Int            @default(0)
+  minimumStock     Int            @default(0)
 
   variant          ProductVariant @relation(fields: [productVariantId], references: [id])
 
   updatedAt        DateTime       @updatedAt
+
+  @@index([minimumStock])
 }
 
 model StockMovement {

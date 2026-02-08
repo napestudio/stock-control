@@ -215,6 +215,7 @@ export default function ProductManagementClient({
             id: `temp-stock-${idx}`,
             productVariantId: `temp-variant-${idx}`,
             quantity: 0,
+            minimumStock: 0,
             updatedAt: new Date(),
           },
         })),

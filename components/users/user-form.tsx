@@ -94,7 +94,7 @@ export default function UserForm({
             id="active"
             defaultChecked={user?.active}
             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            {...register("active" as any)}
+            {...register("active")}
           />
           <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
             Activo
