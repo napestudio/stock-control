@@ -26,8 +26,10 @@ enum SaleStatus {
 
 enum PaymentMethod {
   CASH
-  CARD
+  CREDIT_CARD
+  DEBIT_CARD
   TRANSFER
+  CHECK
   OTHER
 }
 
@@ -367,9 +369,38 @@ model CashSession {
   cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   sales          Sale[]
+  movements      CashMovement[]
 
   @@index([cashRegisterId])
   @@index([userId])
   @@index([openedAt])
   @@index([closedAt])
+}
+
+enum CashMovementType {
+  OPENING         // Initial cash deposit when opening session
+  CLOSING         // Final cash withdrawal when closing session
+  DEPOSIT         // Cash added during session
+  WITHDRAWAL      // Cash removed during session
+  EXPENSE         // Business expense paid in cash
+  REFUND          // Cash refund (may link to sale)
+  ADJUSTMENT      // Manual correction
+}
+
+model CashMovement {
+  id            String            @id @default(uuid())
+  sessionId     String
+  type          CashMovementType
+  paymentMethod PaymentMethod     @default(CASH)
+  amount        Decimal           @db.Decimal(10, 2)
+  description   String?
+
+  session       CashSession       @relation(fields: [sessionId], references: [id])
+
+  createdAt     DateTime          @default(now())
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([paymentMethod])
 }
