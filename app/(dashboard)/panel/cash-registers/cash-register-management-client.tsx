@@ -13,9 +13,10 @@ import CashRegisterTable from "@/components/cash-registers/cash-register-table";
 import CashRegisterFormSidebar from "@/components/cash-registers/cash-register-form-sidebar";
 import DeleteRegisterModal from "@/components/cash-registers/delete-register-modal";
 import OpenSessionSidebar from "@/components/cash-registers/open-session-sidebar";
-import CloseSessionSidebar from "@/components/cash-registers/close-session-sidebar";
 import ActiveSessionPanel from "@/components/cash-registers/active-session-panel";
 import CashMovementFormSidebar from "@/components/cash-registers/cash-movement-form-sidebar";
+import SessionDetailsSidebar from "@/components/cash-registers/session-details-sidebar";
+import MovementDetailsDialog from "@/components/cash-registers/movement-details-dialog";
 import { Button } from "@/components/ui/button";
 
 interface CashRegisterManagementClientProps {
@@ -57,10 +58,14 @@ export default function CashRegisterManagementClient({
   // Session modals
   const [openSessionModalOpen, setOpenSessionModalOpen] = useState(false);
   const [selectedRegisterId, setSelectedRegisterId] = useState<string>("");
-  const [closeSessionModalOpen, setCloseSessionModalOpen] = useState(false);
-  const [closingSessionId, setClosingSessionId] = useState<string>("");
   const [movementModalOpen, setMovementModalOpen] = useState(false);
   const [movementSessionId, setMovementSessionId] = useState<string>("");
+
+  // Session details sidebar and movement dialog
+  const [sessionDetailsSidebarOpen, setSessionDetailsSidebarOpen] = useState(false);
+  const [viewingSessionId, setViewingSessionId] = useState<string>("");
+  const [movementDialogOpen, setMovementDialogOpen] = useState(false);
+  const [viewingMovementId, setViewingMovementId] = useState<string>("");
 
   // Error state
   const [error, setError] = useState("");
@@ -140,17 +145,10 @@ export default function CashRegisterManagementClient({
     refreshRegisters();
   }
 
-  // Handle close session click
+  // Handle close session click - now opens session details sidebar with close form
   function handleCloseSession(sessionId: string) {
-    setClosingSessionId(sessionId);
-    setCloseSessionModalOpen(true);
-  }
-
-  // Handle close session success
-  function handleCloseSessionSuccess() {
-    setCloseSessionModalOpen(false);
-    setClosingSessionId("");
-    refreshRegisters();
+    setViewingSessionId(sessionId);
+    setSessionDetailsSidebarOpen(true);
   }
 
   // Handle add movement click
@@ -164,6 +162,18 @@ export default function CashRegisterManagementClient({
     setMovementModalOpen(false);
     setMovementSessionId("");
     refreshRegisters();
+  }
+
+  // Handle view session click
+  function handleViewSession(sessionId: string) {
+    setViewingSessionId(sessionId);
+    setSessionDetailsSidebarOpen(true);
+  }
+
+  // Handle view movement click
+  function handleViewMovement(movementId: string) {
+    setViewingMovementId(movementId);
+    setMovementDialogOpen(true);
   }
 
   return (
@@ -195,6 +205,7 @@ export default function CashRegisterManagementClient({
         onEdit={handleEdit}
         onDelete={handleDeleteClick}
         onOpenSession={handleOpenSession}
+        onViewSession={handleViewSession}
       />
 
       {/* Create Modal */}
@@ -243,19 +254,6 @@ export default function CashRegisterManagementClient({
         onSuccess={handleOpenSessionSuccess}
       />
 
-      {/* Close Session Modal */}
-      {closingSessionId && (
-        <CloseSessionSidebar
-          sessionId={closingSessionId}
-          isOpen={closeSessionModalOpen}
-          onClose={() => {
-            setCloseSessionModalOpen(false);
-            setClosingSessionId("");
-          }}
-          onSuccess={handleCloseSessionSuccess}
-        />
-      )}
-
       {/* Cash Movement Modal */}
       {movementSessionId && (
         <CashMovementFormSidebar
@@ -266,6 +264,35 @@ export default function CashRegisterManagementClient({
             setMovementSessionId("");
           }}
           onSuccess={handleAddMovementSuccess}
+        />
+      )}
+
+      {/* Session Details Sidebar */}
+      {sessionDetailsSidebarOpen && viewingSessionId && (
+        <SessionDetailsSidebar
+          sessionId={viewingSessionId}
+          onClose={() => {
+            setSessionDetailsSidebarOpen(false);
+            setViewingSessionId("");
+          }}
+          onViewMovement={handleViewMovement}
+          onCloseSessionSuccess={() => {
+            setSessionDetailsSidebarOpen(false);
+            setViewingSessionId("");
+            refreshRegisters();
+          }}
+        />
+      )}
+
+      {/* Movement Details Dialog */}
+      {movementDialogOpen && viewingMovementId && viewingSessionId && (
+        <MovementDetailsDialog
+          sessionId={viewingSessionId}
+          movementId={viewingMovementId}
+          onClose={() => {
+            setMovementDialogOpen(false);
+            setViewingMovementId("");
+          }}
         />
       )}
     </div>

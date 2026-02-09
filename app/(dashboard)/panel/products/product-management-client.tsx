@@ -449,12 +449,12 @@ export default function ProductManagementClient({
           {pagination.totalCount > 0 && (
             <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
               <div className="text-sm text-gray-700">
-                Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
+                Mostrando{" "}
                 {Math.min(
                   pagination.page * pagination.pageSize,
                   pagination.totalCount,
                 )}{" "}
-                of {pagination.totalCount} products
+                de {pagination.totalCount} productos
               </div>
 
               <div className="flex gap-2">
@@ -534,7 +534,7 @@ export default function ProductManagementClient({
             setCreateModalOpen(false);
             setModalError("");
           }}
-          title="Create New Product"
+          title="Crear nuevo producto"
           size="lg"
         >
           <ProductForm

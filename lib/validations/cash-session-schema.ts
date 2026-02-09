@@ -15,10 +15,38 @@ export const openSessionSchema = z.object({
 // Close session
 export const closeSessionSchema = z.object({
   sessionId: z.string().regex(UUID_REGEX, "ID de sesión inválido"),
-  closingAmount: z
+
+  // Closing amounts per payment method (all optional - UI enforces based on used methods)
+  closingAmountCash: z
     .number()
-    .min(0, "El monto de cierre debe ser positivo o cero")
-    .multipleOf(0.01, "El monto debe tener máximo 2 decimales"),
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
+  closingAmountCreditCard: z
+    .number()
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
+  closingAmountDebitCard: z
+    .number()
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
+  closingAmountTransfer: z
+    .number()
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
+  closingAmountCheck: z
+    .number()
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
+  closingAmountOther: z
+    .number()
+    .min(0, "El monto debe ser positivo o cero")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
+    .optional(),
 });
 
 // Cash movement (non-sale transactions)

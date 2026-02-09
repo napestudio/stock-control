@@ -5,7 +5,6 @@ import { getMyActiveSession } from "@/app/actions/cash-session-actions";
 import Badge from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-import { PaymentMethod } from "@prisma/client";
 
 interface ActiveSessionPanelProps {
   onCloseSession: (sessionId: string) => void;
@@ -16,7 +15,8 @@ export default function ActiveSessionPanel({
   onCloseSession,
   onAddMovement,
 }: ActiveSessionPanelProps) {
-  const [session, setSession] = useState<Awaited<ReturnType<typeof getMyActiveSession>>>(null);
+  const [session, setSession] =
+    useState<Awaited<ReturnType<typeof getMyActiveSession>>>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -75,7 +75,9 @@ export default function ActiveSessionPanel({
               d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay sesión activa</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No hay sesión activa
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
             Abra una sesión de caja para comenzar a trabajar.
           </p>
@@ -84,52 +86,9 @@ export default function ActiveSessionPanel({
     );
   }
 
-  // Calculate totals by payment method
-  const totals = {
-    cash: 0,
-    creditCard: 0,
-    debitCard: 0,
-    transfer: 0,
-    check: 0,
-    other: 0,
-  };
-
-  session.sales.forEach((sale) => {
-    sale.payments.forEach((payment) => {
-      switch (payment.method) {
-        case PaymentMethod.CASH:
-          totals.cash += payment.amount;
-          break;
-        case PaymentMethod.CREDIT_CARD:
-          totals.creditCard += payment.amount;
-          break;
-        case PaymentMethod.DEBIT_CARD:
-          totals.debitCard += payment.amount;
-          break;
-        case PaymentMethod.TRANSFER:
-          totals.transfer += payment.amount;
-          break;
-        case PaymentMethod.CHECK:
-          totals.check += payment.amount;
-          break;
-        case PaymentMethod.OTHER:
-          totals.other += payment.amount;
-          break;
-      }
-    });
-  });
-
-  const totalSales =
-    totals.cash +
-    totals.creditCard +
-    totals.debitCard +
-    totals.transfer +
-    totals.check +
-    totals.other;
-
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-medium text-gray-900">Sesión Activa</h3>
           <Badge variant="success">ABIERTA</Badge>
@@ -139,7 +98,12 @@ export default function ActiveSessionPanel({
           className="text-sm text-gray-600 hover:text-gray-900"
           title="Actualizar"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -151,62 +115,27 @@ export default function ActiveSessionPanel({
       </div>
 
       {/* Session Info */}
-      <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
-        <div>
-          <p className="text-sm text-gray-600">Caja:</p>
-          <p className="font-medium">{session.cashRegister.name}</p>
+      <div className="mb-6 space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Caja:</span>
+          <span className="font-medium text-gray-900">
+            {session.cashRegister.name}
+          </span>
         </div>
-        <div>
-          <p className="text-sm text-gray-600">Apertura:</p>
-          <p className="font-medium">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">Apertura:</span>
+          <span className="font-medium text-gray-900">
             {formatDistanceToNow(new Date(session.openedAt), {
               addSuffix: true,
               locale: es,
             })}
-          </p>
+          </span>
         </div>
-        <div>
-          <p className="text-sm text-gray-600">Monto Inicial:</p>
-          <p className="font-medium text-lg">${session.openingAmount.toFixed(2)}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Ventas:</p>
-          <p className="font-medium">{session.sales.length} transacciones</p>
-        </div>
-      </div>
-
-      {/* Sales by Payment Method */}
-      <div className="mb-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Ventas por Método de Pago:</h4>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-green-50 p-3 rounded">
-            <p className="text-xs text-gray-600">Efectivo</p>
-            <p className="text-lg font-semibold text-green-700">${totals.cash.toFixed(2)}</p>
-          </div>
-          <div className="bg-blue-50 p-3 rounded">
-            <p className="text-xs text-gray-600">T. Crédito</p>
-            <p className="text-lg font-semibold text-blue-700">${totals.creditCard.toFixed(2)}</p>
-          </div>
-          <div className="bg-indigo-50 p-3 rounded">
-            <p className="text-xs text-gray-600">T. Débito</p>
-            <p className="text-lg font-semibold text-indigo-700">${totals.debitCard.toFixed(2)}</p>
-          </div>
-          <div className="bg-purple-50 p-3 rounded">
-            <p className="text-xs text-gray-600">Transferencia</p>
-            <p className="text-lg font-semibold text-purple-700">${totals.transfer.toFixed(2)}</p>
-          </div>
-          <div className="bg-yellow-50 p-3 rounded">
-            <p className="text-xs text-gray-600">Cheque</p>
-            <p className="text-lg font-semibold text-yellow-700">${totals.check.toFixed(2)}</p>
-          </div>
-          <div className="bg-gray-100 p-3 rounded">
-            <p className="text-xs text-gray-600">Otro</p>
-            <p className="text-lg font-semibold text-gray-700">${totals.other.toFixed(2)}</p>
-          </div>
-        </div>
-        <div className="mt-3 bg-slate-50 p-3 rounded border-2 border-slate-200">
-          <p className="text-xs text-gray-600">Total Ventas</p>
-          <p className="text-xl font-bold text-slate-700">${totalSales.toFixed(2)}</p>
+        <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+          <span className="text-sm text-gray-600">Monto Inicial:</span>
+          <span className="font-semibold text-lg text-gray-900">
+            ${session.openingAmount.toFixed(2)}
+          </span>
         </div>
       </div>
 
@@ -214,15 +143,15 @@ export default function ActiveSessionPanel({
       <div className="flex gap-3">
         <button
           onClick={() => onAddMovement(session.id)}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
         >
           Agregar Movimiento
         </button>
         <button
           onClick={() => onCloseSession(session.id)}
-          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
         >
-          Cerrar Sesión
+          Finalizar Arqueo
         </button>
       </div>
     </div>

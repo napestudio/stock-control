@@ -25,12 +25,64 @@ type RawCashSessionWithDetails = Prisma.CashSessionGetPayload<typeof cashSession
 // Serialized for client (Decimal → number, Date → string)
 export type CashSessionSerialized = Omit<
   RawCashSessionWithDetails,
-  "openingAmount" | "closingAmount" | "expectedAmount" | "difference" | "sales" | "movements" | "openedAt" | "closedAt"
+  | "openingAmount"
+  | "closingAmount"
+  | "expectedAmount"
+  | "difference"
+  | "closingAmountCash"
+  | "closingAmountCreditCard"
+  | "closingAmountDebitCard"
+  | "closingAmountTransfer"
+  | "closingAmountCheck"
+  | "closingAmountOther"
+  | "expectedAmountCash"
+  | "expectedAmountCreditCard"
+  | "expectedAmountDebitCard"
+  | "expectedAmountTransfer"
+  | "expectedAmountCheck"
+  | "expectedAmountOther"
+  | "differenceCash"
+  | "differenceCreditCard"
+  | "differenceDebitCard"
+  | "differenceTransfer"
+  | "differenceCheck"
+  | "differenceOther"
+  | "sales"
+  | "movements"
+  | "openedAt"
+  | "closedAt"
 > & {
   openingAmount: number;
+
+  // Per-method closing amounts
+  closingAmountCash: number | null;
+  closingAmountCreditCard: number | null;
+  closingAmountDebitCard: number | null;
+  closingAmountTransfer: number | null;
+  closingAmountCheck: number | null;
+  closingAmountOther: number | null;
+
+  // Per-method expected amounts
+  expectedAmountCash: number | null;
+  expectedAmountCreditCard: number | null;
+  expectedAmountDebitCard: number | null;
+  expectedAmountTransfer: number | null;
+  expectedAmountCheck: number | null;
+  expectedAmountOther: number | null;
+
+  // Per-method differences
+  differenceCash: number | null;
+  differenceCreditCard: number | null;
+  differenceDebitCard: number | null;
+  differenceTransfer: number | null;
+  differenceCheck: number | null;
+  differenceOther: number | null;
+
+  // Backwards compatibility fields
   closingAmount: number | null;
   expectedAmount: number | null;
   difference: number | null;
+
   openedAt: string;
   closedAt: string | null;
   sales: Array<{
@@ -45,6 +97,7 @@ export type CashSessionSerialized = Omit<
   movements: Array<{
     id: string;
     type: CashMovementType;
+    paymentMethod: PaymentMethod;
     amount: number;
     description: string | null;
     createdAt: string;
@@ -81,9 +134,51 @@ export interface SessionClosingSummary {
   cashWithdrawalsTotal: number;
   cashExpensesTotal: number;
 
-  // Calculated totals
-  expectedCash: number; // Only counts CASH payment method movements
-  expectedTotal: number; // Counts all payment methods
+  // Expected totals per payment method (sales + movements)
+  expectedCash: number;
+  expectedCreditCard: number;
+  expectedDebitCard: number;
+  expectedTransfer: number;
+  expectedCheck: number;
+  expectedOther: number;
+
+  // Total expected across all payment methods
+  expectedTotal: number;
+}
+
+// Form data for closing session with multiple payment methods
+export interface CloseSessionFormData {
+  sessionId: string;
+
+  // Closing amounts (actual counted by user)
+  closingAmountCash?: number;
+  closingAmountCreditCard?: number;
+  closingAmountDebitCard?: number;
+  closingAmountTransfer?: number;
+  closingAmountCheck?: number;
+  closingAmountOther?: number;
+}
+
+// Per-method verification result
+export interface PaymentMethodVerification {
+  method: PaymentMethod;
+  label: string;
+  expected: number;
+  actual: number;
+  difference: number;
+  hasDiscrepancy: boolean; // true if |difference| > 0.01
+  discrepancyLevel: "none" | "minor" | "major"; // none: 0, minor: <$10, major: >=$10
+}
+
+// Complete closing verification summary
+export interface SessionClosingVerification {
+  sessionId: string;
+  verifications: PaymentMethodVerification[];
+  totalExpected: number;
+  totalActual: number;
+  totalDifference: number;
+  hasAnyDiscrepancy: boolean;
+  canClose: boolean; // Always true, but UI can warn if major discrepancies
 }
 
 // Helper function to get Spanish labels for payment methods

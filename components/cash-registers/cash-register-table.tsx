@@ -10,6 +10,7 @@ interface CashRegisterTableProps {
   onEdit: (register: CashRegisterWithStats) => void;
   onDelete: (register: CashRegisterWithStats) => void;
   onOpenSession: (registerId: string) => void;
+  onViewSession?: (sessionId: string) => void;
 }
 
 export default function CashRegisterTable({
@@ -17,6 +18,7 @@ export default function CashRegisterTable({
   onEdit,
   onDelete,
   onOpenSession,
+  onViewSession,
 }: CashRegisterTableProps) {
   if (registers.length === 0) {
     return (
@@ -34,7 +36,9 @@ export default function CashRegisterTable({
             d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No hay cajas registradoras</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">
+          No hay cajas registradoras
+        </h3>
         <p className="mt-1 text-sm text-gray-500">
           Comienza creando una nueva caja registradora.
         </p>
@@ -68,7 +72,9 @@ export default function CashRegisterTable({
             return (
               <tr key={register.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{register.name}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {register.name}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {register.active ? (
@@ -79,12 +85,29 @@ export default function CashRegisterTable({
                 </td>
                 <td className="px-6 py-4">
                   {activeSession ? (
-                    <div className="text-sm">
+                    <button
+                      onClick={() => onViewSession?.(activeSession.id)}
+                      className="text-left text-sm hover:bg-blue-50 p-2 -m-2 rounded transition-colors w-full"
+                    >
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="success">ABIERTA</Badge>
+                        <svg
+                          className="h-4 w-4 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
                       </div>
                       <div className="text-gray-600">
-                        Usuario: {activeSession.user.name || activeSession.user.email}
+                        Usuario:{" "}
+                        {activeSession.user.name || activeSession.user.email}
                       </div>
                       <div className="text-gray-500 text-xs">
                         Desde:{" "}
@@ -93,7 +116,7 @@ export default function CashRegisterTable({
                           locale: es,
                         })}
                       </div>
-                    </div>
+                    </button>
                   ) : (
                     <Badge variant="neutral">Cerrada</Badge>
                   )}
@@ -105,7 +128,7 @@ export default function CashRegisterTable({
                         onClick={() => onOpenSession(register.id)}
                         className="text-green-600 hover:text-green-900 font-medium"
                       >
-                        Abrir Sesión
+                        Iniciar Arqueo
                       </button>
                     )}
                     <button
