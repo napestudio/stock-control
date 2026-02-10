@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   attributeTemplateSchema,
@@ -53,7 +53,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
           },
   });
 
-  const onSubmit = async (data: AttributeTemplateInput) => {
+  const onSubmit: SubmitHandler<AttributeTemplateInput> = async (data) => {
     setIsSubmitting(true);
     setError("");
 
@@ -66,7 +66,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
         router.push("/panel/settings/attributes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Algo salió mal");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,7 +75,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
   const handleAddOption = async () => {
     if (!newOptionValue.trim()) return;
     if (!template?.id && mode === "edit") {
-      alert("Please save the template first before adding options");
+      alert("Por favor, guarda la plantilla antes de agregar opciones");
       return;
     }
 
@@ -93,14 +93,14 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
         setNewOptionValue("");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add option");
+      setError(err instanceof Error ? err.message : "Error al agregar opción");
     } finally {
       setIsAddingOption(false);
     }
   };
 
   const handleDeleteOption = async (optionId: string, optionValue: string) => {
-    if (!confirm(`Delete option "${optionValue}"?`)) return;
+    if (!confirm(`¿Eliminar la opción "${optionValue}"?`)) return;
 
     setIsSubmitting(true);
     setError("");
@@ -109,7 +109,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
       await deleteAttributeOption(optionId);
       setOptions(options.filter((o) => o.id !== optionId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete option");
+      setError(err instanceof Error ? err.message : "Error al eliminar opción");
     } finally {
       setIsSubmitting(false);
     }
@@ -125,18 +125,18 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
         )}
 
         <FormInput
-          label="Template Name"
+          label="Nombre de Plantilla"
           error={errors.name?.message}
           {...register("name")}
-          placeholder="e.g., Size, Color, Material"
+          placeholder="ej: Talla, Color, Material"
           required
         />
 
         <FormInput
-          label="Description (optional)"
+          label="Descripción (opcional)"
           error={errors.description?.message}
           {...register("description")}
-          placeholder="e.g., Product size options"
+          placeholder="ej: Opciones de talla del producto"
         />
 
         <input type="hidden" {...register("displayOrder")} />
@@ -144,10 +144,10 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
         <div className="flex gap-2">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting
-              ? "Saving..."
+              ? "Guardando..."
               : mode === "create"
-              ? "Create Template"
-              : "Save Changes"}
+              ? "Crear Plantilla"
+              : "Guardar Cambios"}
           </Button>
           <Button
             type="button"
@@ -155,7 +155,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
             onClick={() => router.push("/panel/settings/attributes")}
             disabled={isSubmitting}
           >
-            Cancel
+            Cancelar
           </Button>
         </div>
       </form>
@@ -163,14 +163,14 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
       {/* Options Management - Only show in edit mode */}
       {mode === "edit" && template && (
         <div className="border-t pt-6">
-          <h3 className="font-semibold text-lg mb-4">Options</h3>
+          <h3 className="font-semibold text-lg mb-4">Opciones</h3>
 
           <div className="flex gap-2 mb-4">
             <input
               type="text"
               value={newOptionValue}
               onChange={(e) => setNewOptionValue(e.target.value)}
-              placeholder="Add new option (e.g., Small, Red)"
+              placeholder="Agregar nueva opción (ej: Pequeño, Rojo)"
               className="flex-1 px-3 py-2 border rounded-lg"
               onKeyPress={(e) => {
                 if (e.key === "Enter") {
@@ -185,7 +185,7 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
               onClick={handleAddOption}
               disabled={!newOptionValue.trim() || isAddingOption}
             >
-              {isAddingOption ? "Adding..." : "Add Option"}
+              {isAddingOption ? "Agregando..." : "Agregar Opción"}
             </Button>
           </div>
 
@@ -204,14 +204,14 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
                     onClick={() => handleDeleteOption(option.id, option.value)}
                     disabled={isSubmitting}
                   >
-                    Delete
+                    Eliminar
                   </Button>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground italic">
-              No options yet. Add your first option above.
+              No hay opciones aún. Agrega tu primera opción arriba.
             </p>
           )}
         </div>
@@ -220,9 +220,9 @@ export default function AttributeTemplateForm({ mode, template }: Props) {
       {mode === "create" && (
         <div className="border rounded-lg p-4 bg-muted/50">
           <p className="text-sm text-muted-foreground">
-            💡 <strong>Tip:</strong> After creating the template, you'll be able to add
-            options like "Small", "Medium", "Large" for Size, or "Red", "Blue", "Green"
-            for Color.
+            💡 <strong>Consejo:</strong> Después de crear la plantilla, podrás agregar
+            opciones como &quot;Pequeño&quot;, &quot;Mediano&quot;, &quot;Grande&quot; para Talla, o &quot;Rojo&quot;, &quot;Azul&quot;, &quot;Verde&quot;
+            para Color.
           </p>
         </div>
       )}
