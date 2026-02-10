@@ -18,6 +18,18 @@ export const navigationItems: NavItem[] = [
     requiresAdmin: true,
   },
   {
+    path: "/panel/stock",
+    label: "Control de Stock",
+    icon: "package",
+    requiresAdmin: true,
+  },
+  {
+    path: "/panel/cash-registers",
+    label: "Arqueo de Caja",
+    icon: "package",
+    requiresAdmin: true,
+  },
+  {
     path: "/panel/users",
     label: "Usuarios",
     icon: "users",

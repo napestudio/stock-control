@@ -4,32 +4,51 @@ import { Prisma } from "@prisma/client";
 type RawProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: true;
+
     variants: {
       include: {
         stock: true;
+        attributes: {
+          include: {
+            option: {
+              include: {
+                template: true;
+              };
+            };
+          };
+        };
       };
     };
   };
 }>;
 
 // Serialized product for client (Decimal → number)
-export type ProductWithRelations = Omit<RawProductWithRelations, 'variants'> & {
+export type ProductWithRelations = Omit<RawProductWithRelations, "variants"> & {
   variants: Array<
-    Omit<RawProductWithRelations['variants'][0], 'price' | 'costPrice'> & {
+    Omit<RawProductWithRelations["variants"][0], "price" | "costPrice"> & {
       price: number;
       costPrice: number;
     }
   >;
 };
 
-// Variant with stock (serialized)
+// Variant with stock and attributes (serialized)
 export type VariantWithStock = Omit<
   Prisma.ProductVariantGetPayload<{
     include: {
       stock: true;
+      attributes: {
+        include: {
+          option: {
+            include: {
+              template: true;
+            };
+          };
+        };
+      };
     };
   }>,
-  'price' | 'costPrice'
+  "price" | "costPrice"
 > & {
   price: number;
   costPrice: number;
@@ -40,3 +59,18 @@ export type OptimisticAction =
   | { type: "create"; tempId: string; product: ProductWithRelations }
   | { type: "update"; id: string; product: Partial<ProductWithRelations> }
   | { type: "delete"; id: string };
+
+// Pagination information
+export interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// Product list result with pagination
+export interface ProductListResult {
+  products: ProductWithRelations[];
+  pagination: PaginationInfo;
+}

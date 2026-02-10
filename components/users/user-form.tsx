@@ -54,7 +54,7 @@ export default function UserForm({
         onSuccess();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : "Ocurrió un error");
     } finally {
       setLoading(false);
     }
@@ -69,15 +69,15 @@ export default function UserForm({
       )}
 
       <FormInput
-        label="Name"
+        label="Nombre"
         {...register("name")}
         error={errors.name?.message}
         required
-        placeholder="Enter full name"
+        placeholder="Ingresa el nombre completo"
       />
 
       <FormSelect
-        label="Role"
+        label="Rol"
         {...register("roleId")}
         options={roles.map((role) => ({
           value: role.id,
@@ -94,10 +94,10 @@ export default function UserForm({
             id="active"
             defaultChecked={user?.active}
             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            {...register("active" as any)}
+            {...register("active")}
           />
           <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
-            Active
+            Activo
           </label>
         </div>
       )}
@@ -109,7 +109,7 @@ export default function UserForm({
           className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           disabled={loading}
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
@@ -118,11 +118,11 @@ export default function UserForm({
         >
           {loading
             ? mode === "create"
-              ? "Creating..."
-              : "Saving..."
+              ? "Creando..."
+              : "Guardando..."
             : mode === "create"
-              ? "Create User"
-              : "Save Changes"}
+              ? "Crear Usuario"
+              : "Guardar Cambios"}
         </button>
       </div>
     </form>

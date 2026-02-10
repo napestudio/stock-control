@@ -23,7 +23,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
           } rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${className}`}
           {...props}
         >
-          <option value="">Select {label}</option>
+          <option value="">Seleccionar {label}</option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

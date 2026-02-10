@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(docker-compose down:*)",
-      "Bash(npx prisma migrate dev:*)"
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(dir:*)"
     ]
   }
 }

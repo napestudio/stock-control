@@ -4,10 +4,14 @@ import { useState } from "react";
 import type { Role, User } from "@prisma/client";
 import UserTable from "@/components/users/user-table";
 import UserForm from "@/components/users/user-form";
-import ResetPasswordModal from "@/components/users/reset-password-modal";
+import ResetPasswordSidebar from "@/components/users/reset-password-sidebar";
 import DeleteConfirmationModal from "@/components/users/delete-confirmation-modal";
-import Modal from "@/components/ui/modal";
-import { getUsers, resetUserPassword, softDeleteUser } from "@/app/actions/user-actions";
+import Sidebar from "@/components/ui/sidebar";
+import {
+  getUsers,
+  resetUserPassword,
+  softDeleteUser,
+} from "@/app/actions/user-actions";
 
 type UserWithRole = User & { role: Role };
 type FilterType = "all" | "active" | "inactive";
@@ -65,7 +69,10 @@ export default function UserManagementClient({
   }
 
   // Handle create success
-  function handleCreateSuccess(data?: { user: unknown; temporaryPassword: string }) {
+  function handleCreateSuccess(data?: {
+    user: unknown;
+    temporaryPassword: string;
+  }) {
     setCreateModalOpen(false);
     if (data?.temporaryPassword) {
       setResetPasswordData(data.temporaryPassword);
@@ -158,7 +165,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            All
+            Todos
           </button>
           <button
             onClick={() => handleFilterChange("active")}
@@ -168,7 +175,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Active
+            Activos
           </button>
           <button
             onClick={() => handleFilterChange("inactive")}
@@ -178,7 +185,7 @@ export default function UserManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Inactive
+            Inactivos
           </button>
         </div>
 
@@ -199,7 +206,7 @@ export default function UserManagementClient({
               d="M12 4v16m8-8H4"
             />
           </svg>
-          New User
+          Nuevo Usuario
         </button>
       </div>
 
@@ -220,10 +227,11 @@ export default function UserManagementClient({
 
       {/* Create user modal */}
       {createModalOpen && (
-        <Modal
+        <Sidebar
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
-          title="Create New User"
+          title="Alta de usuario"
+          size="md"
         >
           <UserForm
             mode="create"
@@ -231,18 +239,19 @@ export default function UserManagementClient({
             onSuccess={handleCreateSuccess}
             onCancel={() => setCreateModalOpen(false)}
           />
-        </Modal>
+        </Sidebar>
       )}
 
-      {/* Edit user modal */}
+      {/* Edit user sidebar */}
       {editModalOpen && editingUser && (
-        <Modal
+        <Sidebar
           isOpen={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);
             setEditingUser(null);
           }}
           title="Edit User"
+          size="md"
         >
           <UserForm
             mode="edit"
@@ -254,11 +263,11 @@ export default function UserManagementClient({
               setEditingUser(null);
             }}
           />
-        </Modal>
+        </Sidebar>
       )}
 
       {/* Reset password modal */}
-      <ResetPasswordModal
+      <ResetPasswordSidebar
         isOpen={resetPasswordModalOpen}
         onClose={() => setResetPasswordModalOpen(false)}
         password={resetPasswordData}

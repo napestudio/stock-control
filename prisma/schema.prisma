@@ -26,8 +26,10 @@ enum SaleStatus {
 
 enum PaymentMethod {
   CASH
-  CARD
+  CREDIT_CARD
+  DEBIT_CARD
   TRANSFER
+  CHECK
   OTHER
 }
 
@@ -107,12 +109,65 @@ model ProductCategory {
   products Product[]
 }
 
+// ======================================
+// VARIANT ATTRIBUTES
+// ======================================
+
+model AttributeTemplate {
+  id           String   @id @default(uuid())
+  name         String   @unique  // "Size", "Color", "Material"
+  description  String?
+  displayOrder Int      @default(0)
+  active       Boolean  @default(true)
+
+  options      AttributeOption[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active])
+  @@index([displayOrder])
+}
+
+model AttributeOption {
+  id               String   @id @default(uuid())
+  templateId       String
+  value            String   // "Small", "Red", "Cotton"
+  displayOrder     Int      @default(0)
+  active           Boolean  @default(true)
+
+  template         AttributeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  variantAttributes VariantAttribute[]
+
+  createdAt        DateTime @default(now())
+
+  @@unique([templateId, value])
+  @@index([templateId])
+  @@index([active])
+}
+
+model VariantAttribute {
+  id        String   @id @default(uuid())
+  variantId String
+  optionId  String
+
+  variant   ProductVariant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  option    AttributeOption  @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, optionId])
+  @@index([variantId])
+  @@index([optionId])
+}
+
 model Product {
   id          String           @id @default(uuid())
   name        String
   description String?
   categoryId  String?
   category    ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  imageUrl      String?  // Full Cloudinary URL for display
+  imagePublicId String?  // Cloudinary public_id for deletion
 
   variants    ProductVariant[]
 
@@ -124,23 +179,35 @@ model Product {
   @@index([name])
   @@index([categoryId])
   @@index([deletedAt])
+  @@index([imagePublicId])
+  @@index([deletedAt, active])  // Composite index for common filter queries
+  @@index([createdAt])           // For ordering by date
 }
 
 model ProductVariant {
   id        String   @id @default(uuid())
   productId String
   sku       String   @unique
-  name      String?
+  name      String?  // KEEP for backward compatibility
+
+  // NEW FIELDS for variant attributes
+  imageUrl      String?  // Variant-specific image
+  imagePublicId String?  // Cloudinary public_id for deletion
+  displayName   String?  // "Medium / Red" - denormalized for performance
 
   price     Decimal  @db.Decimal(10, 2)
   costPrice Decimal  @db.Decimal(10, 2)
 
-  product   Product  @relation(fields: [productId], references: [id])
-  stock     Stock?
-  saleItems SaleItem[]
-  movements StockMovement[]
+  product    Product  @relation(fields: [productId], references: [id])
+  stock      Stock?
+  saleItems  SaleItem[]
+  movements  StockMovement[]
+  attributes VariantAttribute[]  // NEW RELATION
 
   @@index([productId])
+  @@index([sku])      // For SKU search optimization
+  @@index([imagePublicId])
+  @@index([displayName])  // For search/filtering
 }
 
 // ======================================
@@ -151,10 +218,13 @@ model Stock {
   id               String         @id @default(uuid())
   productVariantId String         @unique
   quantity         Int            @default(0)
+  minimumStock     Int            @default(0)
 
   variant          ProductVariant @relation(fields: [productVariantId], references: [id])
 
   updatedAt        DateTime       @updatedAt
+
+  @@index([minimumStock])
 }
 
 model StockMovement {
@@ -289,6 +359,32 @@ model CashSession {
   userId         String
 
   openingAmount  Decimal  @db.Decimal(10, 2)
+
+  // Closing amounts per payment method
+  closingAmountCash        Decimal? @db.Decimal(10, 2)
+  closingAmountCreditCard  Decimal? @db.Decimal(10, 2)
+  closingAmountDebitCard   Decimal? @db.Decimal(10, 2)
+  closingAmountTransfer    Decimal? @db.Decimal(10, 2)
+  closingAmountCheck       Decimal? @db.Decimal(10, 2)
+  closingAmountOther       Decimal? @db.Decimal(10, 2)
+
+  // Expected amounts per payment method (for audit)
+  expectedAmountCash        Decimal? @db.Decimal(10, 2)
+  expectedAmountCreditCard  Decimal? @db.Decimal(10, 2)
+  expectedAmountDebitCard   Decimal? @db.Decimal(10, 2)
+  expectedAmountTransfer    Decimal? @db.Decimal(10, 2)
+  expectedAmountCheck       Decimal? @db.Decimal(10, 2)
+  expectedAmountOther       Decimal? @db.Decimal(10, 2)
+
+  // Differences per payment method (for quick analysis)
+  differenceCash        Decimal? @db.Decimal(10, 2)
+  differenceCreditCard  Decimal? @db.Decimal(10, 2)
+  differenceDebitCard   Decimal? @db.Decimal(10, 2)
+  differenceTransfer    Decimal? @db.Decimal(10, 2)
+  differenceCheck       Decimal? @db.Decimal(10, 2)
+  differenceOther       Decimal? @db.Decimal(10, 2)
+
+  // Backwards compatibility - sum of all payment methods
   closingAmount  Decimal? @db.Decimal(10, 2)
   expectedAmount Decimal? @db.Decimal(10, 2)
   difference     Decimal? @db.Decimal(10, 2)
@@ -299,9 +395,38 @@ model CashSession {
   cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   sales          Sale[]
+  movements      CashMovement[]
 
   @@index([cashRegisterId])
   @@index([userId])
   @@index([openedAt])
   @@index([closedAt])
+}
+
+enum CashMovementType {
+  OPENING         // Initial cash deposit when opening session
+  CLOSING         // Final cash withdrawal when closing session
+  DEPOSIT         // Cash added during session
+  WITHDRAWAL      // Cash removed during session
+  EXPENSE         // Business expense paid in cash
+  REFUND          // Cash refund (may link to sale)
+  ADJUSTMENT      // Manual correction
+}
+
+model CashMovement {
+  id            String            @id @default(uuid())
+  sessionId     String
+  type          CashMovementType
+  paymentMethod PaymentMethod     @default(CASH)
+  amount        Decimal           @db.Decimal(10, 2)
+  description   String?
+
+  session       CashSession       @relation(fields: [sessionId], references: [id])
+
+  createdAt     DateTime          @default(now())
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([paymentMethod])
 }

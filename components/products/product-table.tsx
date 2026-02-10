@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Badge from "@/components/ui/badge";
 import type { ProductWithRelations } from "@/types/product";
 
@@ -9,6 +10,30 @@ interface ProductTableProps {
   onEdit: (product: ProductWithRelations) => void;
   onDelete: (product: ProductWithRelations) => void;
   isPending?: boolean;
+}
+
+// Helper function to get attribute summary
+function getAttributeSummary(product: ProductWithRelations): string | null {
+  const variants = product.variants;
+  if (!variants || variants.length === 0) return null;
+
+  // Get unique template names from all variants
+  const templateNames = new Set<string>();
+  variants.forEach((variant) => {
+    // DEFENSIVE: Check if attributes exist and is array
+    if (Array.isArray(variant.attributes)) {
+      variant.attributes.forEach((attr) => {
+        // DEFENSIVE: Check if attr has required properties
+        if (attr?.option?.template?.name) {
+          templateNames.add(attr.option.template.name);
+        }
+      });
+    }
+  });
+
+  if (templateNames.size === 0) return null;
+
+  return Array.from(templateNames).join(" × ");
 }
 
 export default function ProductTable({
@@ -34,9 +59,11 @@ export default function ProductTable({
             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No products</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">
+          No hay productos
+        </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Get started by creating a new product.
+          Comienza creando un nuevo producto.
         </p>
       </div>
     );
@@ -52,22 +79,22 @@ export default function ProductTable({
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Product
+              Producto
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Category
+              Categoría
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Variants
+              Variantes
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Total Stock
+              Stock Total
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
+              Estado
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+              Acciones
             </th>
           </tr>
         </thead>
@@ -75,7 +102,7 @@ export default function ProductTable({
           {products.map((product) => {
             const totalStock = product.variants.reduce(
               (sum, v) => sum + (v.stock?.quantity || 0),
-              0
+              0,
             );
             const isTemp = product.id.startsWith("temp-");
 
@@ -88,39 +115,60 @@ export default function ProductTable({
                 onClick={() => onView(product)}
               >
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">
-                    {product.name}
-                    {isTemp && (
-                      <span className="ml-2 text-xs text-blue-600">
-                        (Saving...)
-                      </span>
+                  <div className="flex items-center gap-3">
+                    {product.imageUrl && (
+                      <div className="relative w-10 h-10 rounded overflow-hidden shrink-0">
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      </div>
                     )}
-                  </div>
-                  {product.description && (
-                    <div className="text-sm text-gray-500 truncate max-w-xs">
-                      {product.description}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900">
+                        {product.name}
+                        {isTemp && (
+                          <span className="ml-2 text-xs text-blue-600">
+                            (Guardando...)
+                          </span>
+                        )}
+                      </div>
+                      {product.description && (
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {product.description}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {product.category?.name || "-"}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">
-                    {product.variants.length} variant
+                    {product.variants.length} variante
                     {product.variants.length !== 1 ? "s" : ""}
                   </div>
+                  {getAttributeSummary(product) && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {getAttributeSummary(product)}
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{totalStock}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {product.active ? (
-                    <Badge variant="success">Active</Badge>
+                    <Badge variant="success">Activo</Badge>
                   ) : (
-                    <Badge variant="neutral">Inactive</Badge>
+                    <Badge variant="neutral">Inactivo</Badge>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -131,7 +179,7 @@ export default function ProductTable({
                     <button
                       onClick={() => onEdit(product)}
                       className="text-indigo-600 hover:text-indigo-900"
-                      title="Edit product"
+                      title="Editar producto"
                       disabled={isTemp}
                     >
                       <svg
@@ -151,7 +199,7 @@ export default function ProductTable({
                     <button
                       onClick={() => onDelete(product)}
                       className="text-red-600 hover:text-red-900"
-                      title="Delete product"
+                      title="Eliminar producto"
                       disabled={isTemp}
                     >
                       <svg

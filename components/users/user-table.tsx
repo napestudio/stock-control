@@ -32,9 +32,9 @@ export default function UserTable({
             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
           />
         </svg>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">No users</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No hay usuarios</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Get started by creating a new user.
+          Comienza creando un nuevo usuario.
         </p>
       </div>
     );
@@ -46,22 +46,22 @@ export default function UserTable({
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
+              Nombre
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Email
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Role
+              Rol
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
+              Estado
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Created
+              Creado
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
+              Acciones
             </th>
           </tr>
         </thead>
@@ -81,11 +81,11 @@ export default function UserTable({
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {user.requirePasswordChange ? (
-                  <Badge variant="warning">Temp Password</Badge>
+                  <Badge variant="warning">Contraseña Temporal</Badge>
                 ) : user.active ? (
-                  <Badge variant="success">Active</Badge>
+                  <Badge variant="success">Activo</Badge>
                 ) : (
-                  <Badge variant="neutral">Inactive</Badge>
+                  <Badge variant="neutral">Inactivo</Badge>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -100,7 +100,7 @@ export default function UserTable({
                   <button
                     onClick={() => onEdit(user)}
                     className="text-indigo-600 hover:text-indigo-900"
-                    title="Edit user"
+                    title="Editar usuario"
                   >
                     <svg
                       className="h-5 w-5"
@@ -119,7 +119,7 @@ export default function UserTable({
                   <button
                     onClick={() => onResetPassword(user.id)}
                     className="text-orange-600 hover:text-orange-900"
-                    title="Reset password"
+                    title="Restablecer contraseña"
                   >
                     <svg
                       className="h-5 w-5"
@@ -138,7 +138,7 @@ export default function UserTable({
                   <button
                     onClick={() => onDelete(user)}
                     className="text-red-600 hover:text-red-900"
-                    title="Delete user"
+                    title="Eliminar usuario"
                   >
                     <svg
                       className="h-5 w-5"

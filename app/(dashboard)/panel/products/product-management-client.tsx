@@ -1,37 +1,46 @@
 "use client";
 
-import { useState, useOptimistic, useTransition } from "react";
-import type { ProductCategory } from "@prisma/client";
-import type { ProductWithRelations, OptimisticAction } from "@/types/product";
+import {
+  createProduct,
+  getProducts,
+  softDeleteProduct,
+  updateProduct,
+} from "@/app/actions/product-actions";
+import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
+import ProductDetailModal from "@/components/products/product-detail-modal";
+import ProductForm from "@/components/products/product-form";
+import ProductTable from "@/components/products/product-table";
+import Sidebar from "@/components/ui/sidebar";
 import type {
   CreateProductInput,
   EditProductInput,
 } from "@/lib/validations/product-schema";
-import ProductTable from "@/components/products/product-table";
-import ProductForm from "@/components/products/product-form";
-import ProductDetailModal from "@/components/products/product-detail-modal";
-import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
-import Modal from "@/components/ui/modal";
-import {
-  createProduct,
-  updateProduct,
-  softDeleteProduct,
-  getProducts,
-} from "@/app/actions/product-actions";
+import type {
+  OptimisticAction,
+  PaginationInfo,
+  ProductWithRelations,
+} from "@/types/product";
+import type { ProductCategory } from "@prisma/client";
+import { useOptimistic, useState, useTransition } from "react";
 
 type FilterType = "all" | "active" | "inactive";
 
 interface ProductManagementClientProps {
   initialProducts: ProductWithRelations[];
+  initialPagination: PaginationInfo;
   categories: ProductCategory[];
 }
 
 export default function ProductManagementClient({
   initialProducts,
+  initialPagination,
   categories,
 }: ProductManagementClientProps) {
   const [products, setProducts] =
     useState<ProductWithRelations[]>(initialProducts);
+  const [pagination, setPagination] =
+    useState<PaginationInfo>(initialPagination);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -79,12 +88,15 @@ export default function ProductManagementClient({
   // Refresh products list
   async function refreshProducts() {
     try {
-      const fetchedProducts = await getProducts(
+      const result = await getProducts(
         filter,
-        categoryFilter,
-        searchQuery,
+        categoryFilter || undefined,
+        searchQuery || undefined,
+        currentPage,
+        50,
       );
-      setProducts(fetchedProducts);
+      setProducts(result.products);
+      setPagination(result.pagination);
     } catch (err) {
       setPageError(
         err instanceof Error ? err.message : "Failed to fetch products",
@@ -95,14 +107,18 @@ export default function ProductManagementClient({
   // Filter handler
   async function handleFilterChange(newFilter: FilterType) {
     setFilter(newFilter);
+    setCurrentPage(1); // Reset to first page on filter change
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           newFilter,
-          categoryFilter,
-          searchQuery,
+          categoryFilter || undefined,
+          searchQuery || undefined,
+          1,
+          50,
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -114,14 +130,18 @@ export default function ProductManagementClient({
   // Category filter handler
   async function handleCategoryFilterChange(categoryId: string) {
     setCategoryFilter(categoryId);
+    setCurrentPage(1); // Reset to first page on filter change
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           filter,
           categoryId || undefined,
-          searchQuery,
+          searchQuery || undefined,
+          1,
+          50,
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -133,14 +153,18 @@ export default function ProductManagementClient({
   // Search handler
   async function handleSearch(query: string) {
     setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page on search
     startTransition(async () => {
       try {
-        const fetchedProducts = await getProducts(
+        const result = await getProducts(
           filter,
           categoryFilter || undefined,
           query || undefined,
+          1,
+          50,
         );
-        setProducts(fetchedProducts);
+        setProducts(result.products);
+        setPagination(result.pagination);
       } catch (err) {
         setPageError(
           err instanceof Error ? err.message : "Failed to fetch products",
@@ -150,35 +174,48 @@ export default function ProductManagementClient({
   }
 
   // Handle create with optimistic update
-  async function handleCreateProduct(data: CreateProductInput) {
+  async function handleCreateProduct(
+    data: CreateProductInput | EditProductInput,
+  ) {
     const tempId = `temp-${Date.now()}`;
     setModalError(""); // Clear previous modal errors
+
+    // Type guard: in create mode, data should be CreateProductInput
+    const createData = data as CreateProductInput;
 
     startTransition(async () => {
       // Optimistically add product to UI (inside transition)
       const optimisticProduct: ProductWithRelations = {
         id: tempId,
-        name: data.name,
-        description: data.description || null,
-        categoryId: data.categoryId || null,
-        category: data.categoryId
-          ? categories.find((c) => c.id === data.categoryId) || null
+        name: createData.name,
+        description: createData.description || null,
+        categoryId: createData.categoryId || null,
+        category: createData.categoryId
+          ? categories.find((c) => c.id === createData.categoryId) || null
           : null,
+        imageUrl: createData.imageUrl || null,
+        imagePublicId: createData.imagePublicId || null,
         active: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
-        variants: data.variants.map((v, idx) => ({
+        variants: createData.variants.map((v, idx) => ({
           id: `temp-variant-${idx}`,
           productId: tempId,
           sku: v.sku,
           name: v.name || null,
           price: v.price,
           costPrice: v.costPrice,
+          imageUrl: v.imageUrl || null,
+          imagePublicId: v.imagePublicId || null,
+          displayName: v.displayName || v.name || null,
+          // Use empty array for optimistic update - real data comes from server
+          attributes: [],
           stock: {
             id: `temp-stock-${idx}`,
             productVariantId: `temp-variant-${idx}`,
             quantity: 0,
+            minimumStock: 0,
             updatedAt: new Date(),
           },
         })),
@@ -191,7 +228,7 @@ export default function ProductManagementClient({
       });
 
       try {
-        await createProduct(data);
+        await createProduct(createData);
         setCreateModalOpen(false);
         setModalError(""); // Clear on success
         await refreshProducts();
@@ -321,7 +358,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            All
+            Todos
           </button>
           <button
             onClick={() => handleFilterChange("active")}
@@ -331,7 +368,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Active
+            Activos
           </button>
           <button
             onClick={() => handleFilterChange("inactive")}
@@ -341,7 +378,7 @@ export default function ProductManagementClient({
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            Inactive
+            Inactivos
           </button>
 
           {/* Category filter */}
@@ -350,7 +387,7 @@ export default function ProductManagementClient({
             onChange={(e) => handleCategoryFilterChange(e.target.value)}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="">All Categories</option>
+            <option value="">Todas las Categorías</option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
@@ -363,7 +400,7 @@ export default function ProductManagementClient({
           {/* Search */}
           <input
             type="text"
-            placeholder="Search products or SKU..."
+            placeholder="Buscar productos o SKU..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:w-64"
@@ -387,7 +424,7 @@ export default function ProductManagementClient({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            New Product
+            Nuevo Producto
           </button>
         </div>
       </div>
@@ -396,26 +433,108 @@ export default function ProductManagementClient({
       {isPending && products.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-sm text-gray-500">Loading products...</p>
+          <p className="mt-2 text-sm text-gray-500">Cargando productos...</p>
         </div>
       ) : (
-        <ProductTable
-          products={filteredProducts}
-          onView={handleViewProduct}
-          onEdit={handleEditProduct}
-          onDelete={handleDeleteClick}
-          isPending={isPending}
-        />
+        <>
+          <ProductTable
+            products={filteredProducts}
+            onView={handleViewProduct}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteClick}
+            isPending={isPending}
+          />
+
+          {/* Pagination controls */}
+          {pagination.totalCount > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
+              <div className="text-sm text-gray-700">
+                Mostrando{" "}
+                {Math.min(
+                  pagination.page * pagination.pageSize,
+                  pagination.totalCount,
+                )}{" "}
+                de {pagination.totalCount} productos
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const newPage = currentPage - 1;
+                    setCurrentPage(newPage);
+                    startTransition(async () => {
+                      try {
+                        const result = await getProducts(
+                          filter,
+                          categoryFilter || undefined,
+                          searchQuery || undefined,
+                          newPage,
+                          50,
+                        );
+                        setProducts(result.products);
+                        setPagination(result.pagination);
+                      } catch (err) {
+                        setPageError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to fetch products",
+                        );
+                      }
+                    });
+                  }}
+                  disabled={pagination.page === 1 || isPending}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                <span className="px-4 py-2 text-sm text-gray-700">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+
+                <button
+                  onClick={() => {
+                    const newPage = currentPage + 1;
+                    setCurrentPage(newPage);
+                    startTransition(async () => {
+                      try {
+                        const result = await getProducts(
+                          filter,
+                          categoryFilter || undefined,
+                          searchQuery || undefined,
+                          newPage,
+                          50,
+                        );
+                        setProducts(result.products);
+                        setPagination(result.pagination);
+                      } catch (err) {
+                        setPageError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to fetch products",
+                        );
+                      }
+                    });
+                  }}
+                  disabled={!pagination.hasMore || isPending}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {createModalOpen && (
-        <Modal
+        <Sidebar
           isOpen={createModalOpen}
           onClose={() => {
             setCreateModalOpen(false);
             setModalError("");
           }}
-          title="Create New Product"
+          title="Crear nuevo producto"
           size="lg"
         >
           <ProductForm
@@ -429,12 +548,12 @@ export default function ProductManagementClient({
             isPending={isPending}
             error={modalError}
           />
-        </Modal>
+        </Sidebar>
       )}
 
-      {/* Edit product modal */}
+      {/* Edit product sidebar */}
       {editModalOpen && editingProduct && (
-        <Modal
+        <Sidebar
           isOpen={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);
@@ -457,7 +576,7 @@ export default function ProductManagementClient({
             isPending={isPending}
             error={modalError}
           />
-        </Modal>
+        </Sidebar>
       )}
 
       {/* View product detail modal */}
