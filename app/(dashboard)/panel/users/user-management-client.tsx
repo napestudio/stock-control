@@ -7,7 +7,11 @@ import UserForm from "@/components/users/user-form";
 import ResetPasswordSidebar from "@/components/users/reset-password-sidebar";
 import DeleteConfirmationModal from "@/components/users/delete-confirmation-modal";
 import Sidebar from "@/components/ui/sidebar";
-import { getUsers, resetUserPassword, softDeleteUser } from "@/app/actions/user-actions";
+import {
+  getUsers,
+  resetUserPassword,
+  softDeleteUser,
+} from "@/app/actions/user-actions";
 
 type UserWithRole = User & { role: Role };
 type FilterType = "all" | "active" | "inactive";
@@ -65,7 +69,10 @@ export default function UserManagementClient({
   }
 
   // Handle create success
-  function handleCreateSuccess(data?: { user: unknown; temporaryPassword: string }) {
+  function handleCreateSuccess(data?: {
+    user: unknown;
+    temporaryPassword: string;
+  }) {
     setCreateModalOpen(false);
     if (data?.temporaryPassword) {
       setResetPasswordData(data.temporaryPassword);
@@ -223,7 +230,7 @@ export default function UserManagementClient({
         <Sidebar
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
-          title="Create New User"
+          title="Alta de usuario"
           size="md"
         >
           <UserForm

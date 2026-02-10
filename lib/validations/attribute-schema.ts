@@ -10,7 +10,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export const attributeTemplateSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(50, "Nombre demasiado largo"),
   description: z.string().max(200, "Descripción demasiado larga").optional(),
-  displayOrder: z.number().int().min(0).default(0),
+  displayOrder: z.number().int().min(0),
 });
 
 export const attributeOptionSchema = z.object({

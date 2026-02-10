@@ -26,8 +26,10 @@ enum SaleStatus {
 
 enum PaymentMethod {
   CASH
-  CARD
+  CREDIT_CARD
+  DEBIT_CARD
   TRANSFER
+  CHECK
   OTHER
 }
 
@@ -357,6 +359,32 @@ model CashSession {
   userId         String
 
   openingAmount  Decimal  @db.Decimal(10, 2)
+
+  // Closing amounts per payment method
+  closingAmountCash        Decimal? @db.Decimal(10, 2)
+  closingAmountCreditCard  Decimal? @db.Decimal(10, 2)
+  closingAmountDebitCard   Decimal? @db.Decimal(10, 2)
+  closingAmountTransfer    Decimal? @db.Decimal(10, 2)
+  closingAmountCheck       Decimal? @db.Decimal(10, 2)
+  closingAmountOther       Decimal? @db.Decimal(10, 2)
+
+  // Expected amounts per payment method (for audit)
+  expectedAmountCash        Decimal? @db.Decimal(10, 2)
+  expectedAmountCreditCard  Decimal? @db.Decimal(10, 2)
+  expectedAmountDebitCard   Decimal? @db.Decimal(10, 2)
+  expectedAmountTransfer    Decimal? @db.Decimal(10, 2)
+  expectedAmountCheck       Decimal? @db.Decimal(10, 2)
+  expectedAmountOther       Decimal? @db.Decimal(10, 2)
+
+  // Differences per payment method (for quick analysis)
+  differenceCash        Decimal? @db.Decimal(10, 2)
+  differenceCreditCard  Decimal? @db.Decimal(10, 2)
+  differenceDebitCard   Decimal? @db.Decimal(10, 2)
+  differenceTransfer    Decimal? @db.Decimal(10, 2)
+  differenceCheck       Decimal? @db.Decimal(10, 2)
+  differenceOther       Decimal? @db.Decimal(10, 2)
+
+  // Backwards compatibility - sum of all payment methods
   closingAmount  Decimal? @db.Decimal(10, 2)
   expectedAmount Decimal? @db.Decimal(10, 2)
   difference     Decimal? @db.Decimal(10, 2)
@@ -367,9 +395,38 @@ model CashSession {
   cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   sales          Sale[]
+  movements      CashMovement[]
 
   @@index([cashRegisterId])
   @@index([userId])
   @@index([openedAt])
   @@index([closedAt])
+}
+
+enum CashMovementType {
+  OPENING         // Initial cash deposit when opening session
+  CLOSING         // Final cash withdrawal when closing session
+  DEPOSIT         // Cash added during session
+  WITHDRAWAL      // Cash removed during session
+  EXPENSE         // Business expense paid in cash
+  REFUND          // Cash refund (may link to sale)
+  ADJUSTMENT      // Manual correction
+}
+
+model CashMovement {
+  id            String            @id @default(uuid())
+  sessionId     String
+  type          CashMovementType
+  paymentMethod PaymentMethod     @default(CASH)
+  amount        Decimal           @db.Decimal(10, 2)
+  description   String?
+
+  session       CashSession       @relation(fields: [sessionId], references: [id])
+
+  createdAt     DateTime          @default(now())
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([paymentMethod])
 }

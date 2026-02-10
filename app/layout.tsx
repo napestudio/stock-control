@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stock Control",
+  title: "StockPro",
   description: "Sistema de control de stock",
 };
 

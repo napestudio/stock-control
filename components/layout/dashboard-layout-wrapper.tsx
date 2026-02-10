@@ -34,9 +34,7 @@ export default function DashboardLayoutWrapper({
           >
             <NavIcon name="menu" />
           </button>
-          <h1 className="ml-4 text-lg font-semibold text-gray-900">
-            Stock Control
-          </h1>
+          <h1 className="ml-4 text-lg font-semibold text-gray-900">StockPro</h1>
         </div>
 
         {/* Main content */}
