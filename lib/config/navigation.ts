@@ -36,6 +36,12 @@ export const navigationItems: NavItem[] = [
     requiresAdmin: true,
   },
   {
+    path: "/panel/customers",
+    label: "Clientes",
+    icon: "users",
+    requiresAdmin: true,
+  },
+  {
     path: "/panel/users",
     label: "Usuarios",
     icon: "users",

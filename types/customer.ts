@@ -38,7 +38,7 @@ export interface CustomerListResult {
 
 // Customer filters
 export interface CustomerFilters {
-  search?: string; // Search by fullName or email
+  search?: string; // Search by firstName, lastName or email
   hasEmail?: boolean;
   createdAfter?: Date;
   createdBefore?: Date;

@@ -10,10 +10,14 @@ const UUID_REGEX =
 // ============================================
 
 export const customerSchema = z.object({
-  fullName: z
+  firstName: z
     .string()
-    .min(1, "El nombre completo es requerido")
-    .max(200, "El nombre no puede exceder 200 caracteres"),
+    .min(1, "El nombre es requerido")
+    .max(100, "El nombre no puede exceder 100 caracteres"),
+  lastName: z
+    .string()
+    .min(1, "El apellido es requerido")
+    .max(100, "El apellido no puede exceder 100 caracteres"),
   email: z
     .string()
     .email("Debe ser un email válido")
