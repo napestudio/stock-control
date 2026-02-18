@@ -493,6 +493,9 @@ export async function closeCashSession(data: CloseSessionInput) {
         expectedAmount: totalExpected,
         difference: totalDifference,
 
+        // Optional closing notes
+        closingNotes: validated.closingNotes || null,
+
         // Close the session with CLOSED status
         status: "CLOSED",
         closedAt: new Date(),

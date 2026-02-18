@@ -413,8 +413,9 @@ model CashSession {
   expectedAmount Decimal? @db.Decimal(10, 2)
   difference     Decimal? @db.Decimal(10, 2)
 
-  openedAt DateTime  @default(now())
-  closedAt DateTime?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  closingNotes String?
 
   cashRegister CashRegister   @relation(fields: [cashRegisterId], references: [id])
   user         User           @relation(fields: [userId], references: [id])
