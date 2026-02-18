@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/ui/modal";
 import Badge from "@/components/ui/badge";
 import type { ProductWithRelations } from "@/types/product";
@@ -78,7 +79,7 @@ export default function ProductDetailModal({
           <h3 className="text-sm font-medium text-gray-700 mb-3">
             Variantes ({product.variants.length})
           </h3>
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-lg overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -99,6 +100,9 @@ export default function ProductDetailModal({
                   </th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
                     Stock
+                  </th>
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                    QR
                   </th>
                 </tr>
               </thead>
@@ -151,6 +155,14 @@ export default function ProductDetailModal({
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">
                       {variant.stock?.quantity || 0}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <QRCodeSVG value={variant.sku} size={48} />
+                        <span className="text-xs text-gray-400">
+                          {variant.sku}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}

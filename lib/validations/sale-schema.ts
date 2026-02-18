@@ -125,6 +125,32 @@ export const completeSaleSchema = z
 export type CompleteSaleInput = z.infer<typeof completeSaleSchema>;
 
 // ============================================
+// QUICK SALE SCHEMA
+// ============================================
+
+export const quickSaleSchema = z.object({
+  productVariantId: z
+    .string()
+    .regex(UUID_REGEX, "ID de variante de producto inválido"),
+  quantity: z
+    .number()
+    .int("La cantidad debe ser un número entero")
+    .positive("La cantidad debe ser mayor a 0")
+    .max(99999, "La cantidad no puede exceder 99,999")
+    .default(1),
+  paymentMethod: z.nativeEnum(PaymentMethod, {
+    message: "Método de pago inválido",
+  }),
+  sessionId: z
+    .string()
+    .regex(UUID_REGEX, "ID de sesión inválido")
+    .optional()
+    .nullable(),
+});
+
+export type QuickSaleInput = z.infer<typeof quickSaleSchema>;
+
+// ============================================
 // SALE FILTERS SCHEMA
 // ============================================
 

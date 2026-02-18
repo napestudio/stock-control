@@ -110,9 +110,10 @@ model RolePermission {
 // ======================================
 
 model ProductCategory {
-  id       String    @id @default(uuid())
-  name     String    @unique
-  products Product[]
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  products    Product[]
 }
 
 // ======================================

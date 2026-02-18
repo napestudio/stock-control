@@ -8,12 +8,14 @@ import {
   createSaleSchema,
   customerSchema,
   paginationSchema,
+  quickSaleSchema,
   saleFiltersSchema,
   updateSaleItemQuantitySchema,
   type AddSaleItemInput,
   type CompleteSaleInput,
   type CreateSaleInput,
   type CustomerInput,
+  type QuickSaleInput,
   type SaleFiltersInput,
   type UpdateSaleItemQuantityInput,
 } from "@/lib/validations/sale-schema";
@@ -824,6 +826,223 @@ export async function completeSale(
   });
 
   // Revalidate paths
+  revalidatePath("/panel/sales");
+  revalidatePath("/panel/stock");
+
+  return serializeSale(completedSale);
+}
+
+/**
+ * Get a single product variant by SKU for use in the quick sale flow
+ */
+export async function getVariantBySkuForSale(
+  sku: string,
+): Promise<ProductVariantSearchResult | null> {
+  const session = await auth();
+
+  if (!session?.user) {
+    throw new Error("No autenticado");
+  }
+
+  const variant = await prisma.productVariant.findUnique({
+    where: { sku },
+    include: {
+      product: {
+        select: { name: true, active: true, deletedAt: true },
+      },
+      stock: {
+        select: { quantity: true },
+      },
+    },
+  });
+
+  if (!variant || !variant.product.active || variant.product.deletedAt) {
+    return null;
+  }
+
+  return {
+    id: variant.id,
+    sku: variant.sku,
+    displayName: variant.displayName || variant.name || "",
+    productName: variant.product.name,
+    price: Number(variant.price),
+    costPrice: Number(variant.costPrice),
+    stockQuantity: variant.stock?.quantity ?? 0,
+  };
+}
+
+/**
+ * Quick sale - atomic sale from a QR scan, no customer required
+ * Creates a sale with one item and immediately completes it
+ */
+export async function quickSale(
+  data: QuickSaleInput,
+): Promise<SaleWithRelations> {
+  const session = await auth();
+
+  if (!session?.user) {
+    throw new Error("No autenticado");
+  }
+
+  const validated = quickSaleSchema.parse(data);
+
+  // Auto-detect active cash session if not provided
+  let sessionId = validated.sessionId ?? null;
+  if (sessionId === null) {
+    try {
+      const activeSession = await getMyActiveSession();
+      sessionId = activeSession?.id ?? null;
+    } catch {
+      sessionId = null;
+    }
+  }
+
+  const completedSale = await prisma.$transaction(async (tx) => {
+    // 1. Look up variant with stock
+    const variant = await tx.productVariant.findUnique({
+      where: { id: validated.productVariantId },
+      include: {
+        stock: true,
+        product: {
+          select: { name: true, active: true, deletedAt: true },
+        },
+      },
+    });
+
+    if (!variant) {
+      throw new Error("Variante de producto no encontrada");
+    }
+
+    if (!variant.product.active || variant.product.deletedAt) {
+      throw new Error("Producto no disponible para la venta");
+    }
+
+    if (!variant.stock) {
+      throw new Error(`Stock no encontrado para ${variant.sku}`);
+    }
+
+    if (variant.stock.quantity < validated.quantity) {
+      throw new Error(
+        `Stock insuficiente para ${variant.sku}. Disponible: ${variant.stock.quantity}, Requerido: ${validated.quantity}`,
+      );
+    }
+
+    const unitPrice = Number(variant.price);
+    const unitCost = Number(variant.costPrice);
+    const total = unitPrice * validated.quantity;
+    const totalCost = unitCost * validated.quantity;
+
+    // 2. Create the sale
+    const sale = await tx.sale.create({
+      data: {
+        userId: session.user.id,
+        status: SaleStatus.PENDING,
+        sessionId,
+        subtotal: total,
+        tax: 0,
+        discount: 0,
+        total,
+        totalCost,
+      },
+    });
+
+    // 3. Create sale item with price snapshot
+    const saleItem = await tx.saleItem.create({
+      data: {
+        saleId: sale.id,
+        productVariantId: validated.productVariantId,
+        quantity: validated.quantity,
+        priceAtSale: unitPrice,
+        costAtSale: unitCost,
+      },
+    });
+
+    // 4. Create stock OUT movement
+    await tx.stockMovement.create({
+      data: {
+        productVariantId: validated.productVariantId,
+        type: StockMovementType.OUT,
+        quantity: validated.quantity,
+        reason: `Venta rápida #${sale.id.slice(0, 8)}`,
+        saleItemId: saleItem.id,
+      },
+    });
+
+    // 5. Decrement stock
+    await tx.stock.update({
+      where: { productVariantId: validated.productVariantId },
+      data: { quantity: { decrement: validated.quantity } },
+    });
+
+    // Guard against race conditions
+    const updatedStock = await tx.stock.findUnique({
+      where: { productVariantId: validated.productVariantId },
+    });
+    if (updatedStock && updatedStock.quantity < 0) {
+      throw new Error(
+        `Error de concurrencia: Stock negativo detectado para ${variant.sku}`,
+      );
+    }
+
+    // 6. Create payment record
+    await tx.payment.create({
+      data: {
+        saleId: sale.id,
+        method: validated.paymentMethod,
+        amount: total,
+      },
+    });
+
+    // 7. Create SALE cash movement if session is OPEN
+    if (sessionId) {
+      const cashSession = await tx.cashSession.findUnique({
+        where: { id: sessionId },
+      });
+      if (cashSession && cashSession.status === "OPEN") {
+        await tx.cashMovement.create({
+          data: {
+            sessionId,
+            saleId: sale.id,
+            type: CashMovementType.SALE,
+            paymentMethod: validated.paymentMethod,
+            amount: total,
+            description: `Venta rápida #${sale.id.slice(0, 8)}`,
+            createdBy: session.user.id,
+          },
+        });
+      }
+    }
+
+    // 8. Mark sale as COMPLETED
+    const completed = await tx.sale.update({
+      where: { id: sale.id },
+      data: { status: SaleStatus.COMPLETED },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+                stock: true,
+              },
+            },
+          },
+        },
+        payments: true,
+        customer: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return completed;
+  });
+
   revalidatePath("/panel/sales");
   revalidatePath("/panel/stock");
 

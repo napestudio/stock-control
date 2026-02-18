@@ -33,8 +33,8 @@ export type StockWithVariantSerialized = Omit<StockWithVariant, "variant"> & {
   isLowStock: boolean; // Computed field
 };
 
-// Stock movement with variant info
-export type StockMovementWithVariant = Prisma.StockMovementGetPayload<{
+// Stock movement with variant info (raw Prisma, internal use only)
+type StockMovementWithVariantRaw = Prisma.StockMovementGetPayload<{
   include: {
     variant: {
       include: {
@@ -43,6 +43,20 @@ export type StockMovementWithVariant = Prisma.StockMovementGetPayload<{
     };
   };
 }>;
+
+// Serialized stock movement for client (Decimal → number)
+export type StockMovementWithVariant = Omit<
+  StockMovementWithVariantRaw,
+  "variant"
+> & {
+  variant: Omit<
+    StockMovementWithVariantRaw["variant"],
+    "price" | "costPrice"
+  > & {
+    price: number;
+    costPrice: number;
+  };
+};
 
 // Optimistic action types for stock operations
 export type StockOptimisticAction =

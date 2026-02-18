@@ -990,6 +990,12 @@ export async function recordSalePayment(
   amount: number,
   paymentMethod: PaymentMethod
 ) {
+  const authSession = await auth();
+
+  if (!authSession?.user) {
+    throw new Error("No autenticado");
+  }
+
   // Validate session is OPEN
   const session = await prisma.cashSession.findUnique({
     where: { id: sessionId },
@@ -1008,6 +1014,7 @@ export async function recordSalePayment(
       paymentMethod,
       amount: Math.abs(amount),
       description: `Venta #${saleId.slice(0, 8)}`,
+      createdBy: authSession.user.id,
     },
   });
 
@@ -1030,6 +1037,12 @@ export async function recordRefundPayment(
   amount: number,
   paymentMethod: PaymentMethod
 ) {
+  const authSession = await auth();
+
+  if (!authSession?.user) {
+    throw new Error("No autenticado");
+  }
+
   // Validate session exists
   const session = await prisma.cashSession.findUnique({
     where: { id: sessionId },
@@ -1058,6 +1071,7 @@ export async function recordRefundPayment(
       paymentMethod,
       amount: Math.abs(amount),
       description: `Devolución de venta #${saleId.slice(0, 8)}`,
+      createdBy: authSession.user.id,
     },
   });
 
