@@ -448,7 +448,9 @@ export default function SalesManagementClient({
                         })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sale.customer?.fullName || "N/A"}
+                        {sale.customer
+                          ? `${sale.customer.firstName} ${sale.customer.lastName}`
+                          : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {sale.itemCount}

@@ -49,8 +49,9 @@ export default function SaleSidebar({
     resolver: zodResolver(customerSchema),
     defaultValues: sale.customer
       ? {
-          fullName: sale.customer.fullName,
-          email: sale.customer.email,
+          firstName: sale.customer.firstName,
+          lastName: sale.customer.lastName,
+          email: sale.customer.email ?? "",
           phone: sale.customer.phone || "",
           address: sale.customer.address || "",
         }

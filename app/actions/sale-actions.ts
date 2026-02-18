@@ -153,7 +153,8 @@ export async function getOrCreateCustomer(
     where: { email: validated.email },
     create: validated,
     update: {
-      fullName: validated.fullName,
+      firstName: validated.firstName,
+      lastName: validated.lastName,
       phone: validated.phone,
       address: validated.address,
     },
@@ -651,7 +652,8 @@ export async function completeSale(
         where: { email: validated.customerData.email },
         create: validated.customerData,
         update: {
-          fullName: validated.customerData.fullName,
+          firstName: validated.customerData.firstName,
+          lastName: validated.customerData.lastName,
           phone: validated.customerData.phone,
           address: validated.customerData.address,
         },
@@ -1133,7 +1135,13 @@ export async function getSalesHistory(
       where.customer = {
         OR: [
           {
-            fullName: {
+            firstName: {
+              contains: validatedFilters.search,
+              mode: "insensitive",
+            },
+          },
+          {
+            lastName: {
               contains: validatedFilters.search,
               mode: "insensitive",
             },

@@ -31,7 +31,8 @@ export default function CustomerFormSection({
     try {
       const customer = await searchCustomerByEmail(email);
       if (customer) {
-        setValue("fullName", customer.fullName);
+        setValue("firstName", customer.firstName);
+        setValue("lastName", customer.lastName);
         setValue("phone", customer.phone || "");
         setValue("address", customer.address || "");
         setCustomerFound(true);
@@ -78,13 +79,22 @@ export default function CustomerFormSection({
         )}
       </div>
 
-      <FormInput
-        label="Nombre Completo"
-        {...register("fullName")}
-        error={errors.fullName?.message}
-        required
-        placeholder="Juan Pérez"
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <FormInput
+          label="Nombre"
+          {...register("firstName")}
+          error={errors.firstName?.message}
+          required
+          placeholder="Juan"
+        />
+        <FormInput
+          label="Apellido"
+          {...register("lastName")}
+          error={errors.lastName?.message}
+          required
+          placeholder="Pérez"
+        />
+      </div>
 
       <FormInput
         label="Teléfono"
