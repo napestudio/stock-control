@@ -23,12 +23,12 @@ export default async function EditAttributeTemplatePage({ params }: Props) {
       <div className="mb-6">
         <Link href="/panel/settings/attributes">
           <Button variant="ghost" size="sm" className="mb-4">
-            ← Back to Attributes
+            ← Volver a Atributos
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">Edit Attribute Template</h1>
+        <h1 className="text-3xl font-bold">Editar Plantilla de Atributos</h1>
         <p className="text-muted-foreground mt-1">
-          Update template details and manage options
+          Actualizá los detalles de la plantilla y administrá las opciones
         </p>
       </div>
 

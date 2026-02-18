@@ -10,13 +10,14 @@ export default async function AttributesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Variant Attributes</h1>
+          <h1 className="text-3xl font-bold">Atributos y Variantes</h1>
           <p className="text-muted-foreground mt-1">
-            Manage attribute templates and options for product variants
+            Administrá plantillas de atributos y opciones para variantes de
+            productos
           </p>
         </div>
         <Link href="/panel/settings/attributes/new">
-          <Button>Create Template</Button>
+          <Button>Crear Plantilla</Button>
         </Link>
       </div>
 

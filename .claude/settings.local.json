@@ -3,7 +3,12 @@
     "allow": [
       "Bash(docker-compose down:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Read(//c/dev/RestaurantesNextjs/restaurantNextjs/**)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx tsc:*)",
+      "Bash($env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\")"
     ]
   }
 }

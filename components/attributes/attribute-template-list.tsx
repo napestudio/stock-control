@@ -14,13 +14,13 @@ export default function AttributeTemplateList({ templates }: Props) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete template "${name}"? This cannot be undone.`)) return;
+    if (!confirm(`¿Eliminar la plantilla "${name}"? Esta acción no se puede deshacer.`)) return;
 
     setIsDeleting(id);
     try {
       await deleteAttributeTemplate(id);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to delete template");
+      alert(error instanceof Error ? error.message : "Error al eliminar la plantilla");
     } finally {
       setIsDeleting(null);
     }
@@ -30,10 +30,10 @@ export default function AttributeTemplateList({ templates }: Props) {
     return (
       <div className="text-center py-12 border-2 border-dashed rounded-lg">
         <p className="text-muted-foreground mb-4">
-          No attribute templates yet. Create one to get started.
+          Todavía no hay plantillas de atributos. Creá una para comenzar.
         </p>
         <Link href="/panel/settings/attributes/new">
-          <Button>Create First Template</Button>
+          <Button>Crear Primera Plantilla</Button>
         </Link>
       </div>
     );
@@ -63,18 +63,18 @@ export default function AttributeTemplateList({ templates }: Props) {
                   ))
                 ) : (
                   <span className="text-sm text-muted-foreground italic">
-                    No options yet
+                    Sin opciones aún
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                {template.options.length} option{template.options.length !== 1 ? "s" : ""}
+                {template.options.length} opción{template.options.length !== 1 ? "es" : ""}
               </p>
             </div>
             <div className="flex gap-2 ml-4">
               <Link href={`/panel/settings/attributes/${template.id}`}>
                 <Button variant="outline" size="sm">
-                  Edit
+                  Editar
                 </Button>
               </Link>
               <Button
@@ -83,7 +83,7 @@ export default function AttributeTemplateList({ templates }: Props) {
                 onClick={() => handleDelete(template.id, template.name)}
                 disabled={isDeleting === template.id}
               >
-                {isDeleting === template.id ? "Deleting..." : "Delete"}
+                {isDeleting === template.id ? "Eliminando..." : "Eliminar"}
               </Button>
             </div>
           </div>
