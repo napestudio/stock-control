@@ -30,16 +30,20 @@ export default function CashMovementFormSidebar({
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<CashMovementInput>({
     resolver: zodResolver(cashMovementSchema),
     defaultValues: {
       sessionId,
-      type: CashMovementType.DEPOSIT,
+      type: CashMovementType.INCOME,
       paymentMethod: PaymentMethod.CASH,
       amount: 0,
       description: "",
     },
   });
+
+  const selectedType = watch("type");
+  const selectedPaymentMethod = watch("paymentMethod");
 
   async function onSubmit(data: CashMovementInput) {
     setError("");
@@ -57,13 +61,19 @@ export default function CashMovementFormSidebar({
     }
   }
 
-  // Movement type options (excluding OPENING and CLOSING which are automatic)
+  // Only INCOME and EXPENSE for manual movements
+  // SALE and REFUND are created automatically from sales
   const movementTypeOptions = [
-    { value: CashMovementType.DEPOSIT, label: "Depósito" },
-    { value: CashMovementType.WITHDRAWAL, label: "Retiro" },
-    { value: CashMovementType.EXPENSE, label: "Gasto" },
-    { value: CashMovementType.REFUND, label: "Devolución" },
-    { value: CashMovementType.ADJUSTMENT, label: "Ajuste" },
+    {
+      value: CashMovementType.INCOME,
+      label: "Ingreso Manual",
+      description: "Dinero que ingresa a la caja (ej: depósito inicial, fondeo)",
+    },
+    {
+      value: CashMovementType.EXPENSE,
+      label: "Egreso Manual",
+      description: "Dinero que sale de la caja (ej: pago a proveedor, retiro de efectivo)",
+    },
   ];
 
   return (
@@ -91,6 +101,12 @@ export default function CashMovementFormSidebar({
             ))}
           </select>
           {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>}
+          {/* Show description for selected type */}
+          {selectedType && (
+            <p className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+              💡 {movementTypeOptions.find((opt) => opt.value === selectedType)?.description}
+            </p>
+          )}
         </div>
 
         <div>
@@ -107,14 +123,16 @@ export default function CashMovementFormSidebar({
             <option value={PaymentMethod.DEBIT_CARD}>Tarjeta de Débito</option>
             <option value={PaymentMethod.TRANSFER}>Transferencia</option>
             <option value={PaymentMethod.CHECK}>Cheque</option>
-            <option value={PaymentMethod.OTHER}>Otro</option>
           </select>
           {errors.paymentMethod && (
             <p className="mt-1 text-sm text-red-600">{errors.paymentMethod.message}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
-            Solo movimientos en efectivo afectan el saldo de caja física
-          </p>
+          {/* Warning for non-CASH methods */}
+          {selectedPaymentMethod && selectedPaymentMethod !== PaymentMethod.CASH && (
+            <div className="mt-2 text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+              ⚠️ <strong>Nota:</strong> Los movimientos con {selectedPaymentMethod === PaymentMethod.CREDIT_CARD ? "tarjeta de crédito" : selectedPaymentMethod === PaymentMethod.DEBIT_CARD ? "tarjeta de débito" : selectedPaymentMethod === PaymentMethod.TRANSFER ? "transferencia" : "cheque"} se registran para el seguimiento, pero no afectan el efectivo físico de la caja.
+            </div>
+          )}
         </div>
 
         <FormInput

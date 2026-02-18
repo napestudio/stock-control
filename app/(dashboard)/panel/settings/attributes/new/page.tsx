@@ -8,12 +8,12 @@ export default function NewAttributeTemplatePage() {
       <div className="mb-6">
         <Link href="/panel/settings/attributes">
           <Button variant="ghost" size="sm" className="mb-4">
-            ← Back to Attributes
+            ← Volver a Atributos
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">Create Attribute Template</h1>
+        <h1 className="text-3xl font-bold">Crear Plantilla de Atributos</h1>
         <p className="text-muted-foreground mt-1">
-          Create a new attribute template like Size, Color, or Material
+          Creá una nueva plantilla de atributos como Talla, Color o Material
         </p>
       </div>
 

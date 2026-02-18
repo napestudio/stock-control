@@ -57,12 +57,11 @@ export default function CashMovementsClient({
           cashRegisterId: filters.cashRegisterId || undefined,
           userId: filters.userId || undefined,
           paymentMethod: (filters.paymentMethod as PaymentMethod) || undefined,
-          movementType:
-            (filters.movementType as CashMovementType) || undefined,
+          movementType: (filters.movementType as CashMovementType) || undefined,
           searchQuery: filters.searchQuery || undefined,
         },
         currentPage,
-        50
+        50,
       );
       setMovements(result.movements);
       setPagination(result.pagination);
@@ -182,7 +181,9 @@ export default function CashMovementsClient({
                 <input
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                  onChange={(e) =>
+                    handleFilterChange("dateFrom", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -239,7 +240,6 @@ export default function CashMovementsClient({
                   <option value="DEBIT_CARD">Tarjeta de Débito</option>
                   <option value="TRANSFER">Transferencia</option>
                   <option value="CHECK">Cheque</option>
-                  <option value="OTHER">Otro</option>
                 </select>
               </div>
 
@@ -257,10 +257,10 @@ export default function CashMovementsClient({
                 >
                   <option value="">Todos</option>
                   <option value="OPENING">Apertura</option>
-                  <option value="DEPOSIT">Depósito</option>
-                  <option value="WITHDRAWAL">Retiro</option>
-                  <option value="EXPENSE">Gasto</option>
-                  <option value="REFUND">Reembolso</option>
+                  <option value="DEPOSIT">Ingreso</option>
+                  {/* <option value="WITHDRAWAL">Retiro</option> */}
+                  <option value="EXPENSE">Egreso</option>
+                  {/* <option value="REFUND">Reembolso</option> */}
                   <option value="ADJUSTMENT">Ajuste</option>
                   <option value="CLOSING">Cierre</option>
                 </select>
@@ -290,7 +290,11 @@ export default function CashMovementsClient({
               <Button variant="outline" onClick={handleClearFilters}>
                 Limpiar Filtros
               </Button>
-              <Button variant="outline" onClick={handleExport} className="ml-auto">
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                className="ml-auto"
+              >
                 Exportar CSV
               </Button>
             </div>

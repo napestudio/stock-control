@@ -6,7 +6,10 @@ import { uploadProductImage } from "@/app/actions/image-actions";
 
 interface ImageUploadProps {
   currentImageUrl?: string | null;
-  onImageChange: (imageUrl: string | null, imagePublicId: string | null) => void;
+  onImageChange: (
+    imageUrl: string | null,
+    imagePublicId: string | null,
+  ) => void;
   disabled?: boolean;
 }
 
@@ -15,7 +18,9 @@ export default function ImageUpload({
   onImageChange,
   disabled = false,
 }: ImageUploadProps) {
-  const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
+  const [preview, setPreview] = useState<string | null>(
+    currentImageUrl || null,
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,7 +36,7 @@ export default function ImageUpload({
         readerRef.current = null;
       }
       // Revoke the preview URL if it's a blob URL
-      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+      if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrlRef.current);
       }
     };
@@ -62,7 +67,7 @@ export default function ImageUpload({
     }
 
     // Clean up previous preview URL if it's a blob URL
-    if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+    if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrlRef.current);
     }
 
@@ -81,7 +86,10 @@ export default function ImageUpload({
 
       if (result.success && result.imageUrl && result.imagePublicId) {
         // Clean up the temporary object URL since we now have the Cloudinary URL
-        if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        if (
+          previewUrlRef.current &&
+          previewUrlRef.current.startsWith("blob:")
+        ) {
           URL.revokeObjectURL(previewUrlRef.current);
           previewUrlRef.current = null;
         }
@@ -90,7 +98,10 @@ export default function ImageUpload({
       } else {
         setError(result.error || "Failed to upload image");
         // Clean up the object URL on error
-        if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+        if (
+          previewUrlRef.current &&
+          previewUrlRef.current.startsWith("blob:")
+        ) {
           URL.revokeObjectURL(previewUrlRef.current);
           previewUrlRef.current = null;
         }
@@ -99,7 +110,7 @@ export default function ImageUpload({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       // Clean up the object URL on error
-      if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+      if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
         URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;
       }
@@ -111,7 +122,7 @@ export default function ImageUpload({
 
   const handleRemove = () => {
     // Clean up object URL if it exists
-    if (previewUrlRef.current && previewUrlRef.current.startsWith('blob:')) {
+    if (previewUrlRef.current && previewUrlRef.current.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
     }
@@ -191,7 +202,7 @@ export default function ImageUpload({
               disabled={disabled || isUploading}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {preview ? "Change Image" : "Upload Image"}
+              {preview ? "Cambiar Foto" : "Subir Foto"}
             </button>
 
             {preview && (
@@ -201,18 +212,14 @@ export default function ImageUpload({
                 disabled={disabled || isUploading}
                 className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Remove
+                Eliminar
               </button>
             )}
           </div>
 
-          <p className="text-xs text-gray-500">
-            JPG, PNG or WebP. Max 5MB.
-          </p>
+          <p className="text-xs text-gray-500">JPG, PNG or WebP. Max 5MB.</p>
 
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
           {isUploading && (
             <p className="text-sm text-indigo-600">Uploading...</p>

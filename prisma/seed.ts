@@ -82,25 +82,13 @@ async function main() {
       name: "Administrador",
       password: hashedPassword,
       active: true,
+      requirePasswordChange: false,
       roleId: adminRole.id,
     },
   });
   console.log("Admin user created");
   console.log("Email: admin@stockcontrol.com");
   console.log("Password: admin123");
-
-  // 5. Create a Cash Register (useful for testing)
-  console.log("Creating default cash register...");
-  await prisma.cashRegister.upsert({
-    where: { id: "default-cash-register" },
-    update: {},
-    create: {
-      id: "default-cash-register",
-      name: "Caja Principal",
-      active: true,
-    },
-  });
-  console.log("Cash register created");
 
   console.log("Seed completed successfully!");
 }

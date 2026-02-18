@@ -25,7 +25,7 @@ export async function getStockList(
     lowStockOnly?: boolean;
   },
   page: number = 1,
-  pageSize: number = 50
+  pageSize: number = 50,
 ) {
   const session = await auth();
 
@@ -92,9 +92,7 @@ export async function getStockList(
           },
         },
       },
-      orderBy: [
-        { quantity: "asc" }, // Low stock first
-      ],
+      orderBy: [{ updatedAt: "desc" }],
       skip,
       take,
     }),
@@ -259,7 +257,9 @@ export async function updateMinimumStock(data: UpdateMinimumStockInput) {
 /**
  * Bulk update minimum stock levels
  */
-export async function bulkUpdateMinimumStock(data: BulkUpdateMinimumStockInput) {
+export async function bulkUpdateMinimumStock(
+  data: BulkUpdateMinimumStockInput,
+) {
   const session = await auth();
 
   if (!isAdmin(session)) {
@@ -275,8 +275,8 @@ export async function bulkUpdateMinimumStock(data: BulkUpdateMinimumStockInput) 
       prisma.stock.update({
         where: { productVariantId: update.productVariantId },
         data: { minimumStock: update.minimumStock },
-      })
-    )
+      }),
+    ),
   );
 
   revalidatePath("/panel/stock");
@@ -290,7 +290,7 @@ export async function bulkUpdateMinimumStock(data: BulkUpdateMinimumStockInput) 
 export async function getStockMovements(
   productVariantId: string,
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
 ) {
   const session = await auth();
 

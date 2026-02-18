@@ -12,6 +12,12 @@ export const navigationItems: NavItem[] = [
     icon: "home",
   },
   {
+    path: "/panel/sales",
+    label: "Ventas",
+    icon: "package",
+    requiresAdmin: true,
+  },
+  {
     path: "/panel/products",
     label: "Productos",
     icon: "package",
