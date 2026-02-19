@@ -12,61 +12,66 @@ export const openSessionSchema = z.object({
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales"),
 });
 
-// Close session
+// Close session with multi-method verification
 export const closeSessionSchema = z.object({
   sessionId: z.string().regex(UUID_REGEX, "ID de sesión inválido"),
 
-  // Closing amounts per payment method (all optional - UI enforces based on used methods)
+  // CASH is always required (even if zero)
   closingAmountCash: z
     .number()
-    .min(0, "El monto debe ser positivo o cero")
-    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
-    .optional(),
+    .min(0, "El monto de efectivo no puede ser negativo")
+    .multipleOf(0.01, "El monto debe tener máximo 2 decimales"),
+
+  // Other methods are optional (only required if used in session - enforced server-side)
   closingAmountCreditCard: z
     .number()
-    .min(0, "El monto debe ser positivo o cero")
+    .min(0, "El monto de tarjeta crédito no puede ser negativo")
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
     .optional(),
   closingAmountDebitCard: z
     .number()
-    .min(0, "El monto debe ser positivo o cero")
+    .min(0, "El monto de tarjeta débito no puede ser negativo")
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
     .optional(),
   closingAmountTransfer: z
     .number()
-    .min(0, "El monto debe ser positivo o cero")
+    .min(0, "El monto de transferencia no puede ser negativo")
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
     .optional(),
   closingAmountCheck: z
     .number()
-    .min(0, "El monto debe ser positivo o cero")
+    .min(0, "El monto de cheque no puede ser negativo")
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
     .optional(),
-  closingAmountOther: z
-    .number()
-    .min(0, "El monto debe ser positivo o cero")
-    .multipleOf(0.01, "El monto debe tener máximo 2 decimales")
-    .optional(),
+
+  // Optional closing notes
+  closingNotes: z.string().max(1000, "Las notas no pueden exceder 1000 caracteres").optional(),
 });
 
-// Cash movement (non-sale transactions)
+// Cash movement (manual transactions only - INCOME and EXPENSE)
+// SALE and REFUND movements are created automatically from sales
 export const cashMovementSchema = z.object({
   sessionId: z.string().regex(UUID_REGEX, "ID de sesión inválido"),
-  type: z.nativeEnum(CashMovementType, {
-    message: "Tipo de movimiento inválido",
+
+  // Only allow INCOME and EXPENSE for manual movements
+  type: z.enum(["INCOME", "EXPENSE"], {
+    message: "Tipo de movimiento inválido. Solo se permiten INGRESO y EGRESO manuales.",
   }),
+
   paymentMethod: z.nativeEnum(PaymentMethod, {
     message: "Método de pago inválido",
   }),
+
   amount: z
     .number()
     .refine((val) => !isNaN(val) && isFinite(val), "El monto debe ser un número válido")
-    .min(0.01, "El monto debe ser al menos 0.01")
+    .positive("El monto debe ser mayor a 0")
     .max(99999999.99, "El monto es demasiado grande")
     .multipleOf(0.01, "El monto debe tener máximo 2 decimales"),
+
   description: z
     .string()
-    .max(200, "La descripción debe tener 200 caracteres o menos")
+    .max(500, "La descripción debe tener 500 caracteres o menos")
     .optional(),
 });
 

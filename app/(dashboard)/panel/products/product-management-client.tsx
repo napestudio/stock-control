@@ -1,17 +1,20 @@
 "use client";
 
 import {
+  createCategory,
   createProduct,
   getProducts,
   softDeleteProduct,
   updateProduct,
 } from "@/app/actions/product-actions";
+import CategorySidebar from "@/components/products/category-sidebar";
 import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
 import ProductDetailModal from "@/components/products/product-detail-modal";
 import ProductForm from "@/components/products/product-form";
 import ProductTable from "@/components/products/product-table";
 import Sidebar from "@/components/ui/sidebar";
 import type {
+  CreateCategoryInput,
   CreateProductInput,
   EditProductInput,
 } from "@/lib/validations/product-schema";
@@ -40,6 +43,8 @@ export default function ProductManagementClient({
     useState<ProductWithRelations[]>(initialProducts);
   const [pagination, setPagination] =
     useState<PaginationInfo>(initialPagination);
+  const [localCategories, setLocalCategories] =
+    useState<ProductCategory[]>(categories);
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState<FilterType>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
@@ -81,9 +86,31 @@ export default function ProductManagementClient({
   const [deletingProduct, setDeletingProduct] =
     useState<ProductWithRelations | null>(null);
 
+  // Category sidebar state
+  const [categorySidebarOpen, setCategorySidebarOpen] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+
   // Error states - separate for page and modal
   const [pageError, setPageError] = useState("");
   const [modalError, setModalError] = useState("");
+
+  // Handle create category
+  async function handleCreateCategory(data: CreateCategoryInput) {
+    startTransition(async () => {
+      try {
+        const result = await createCategory(data);
+        setLocalCategories((prev) =>
+          [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)),
+        );
+        setCategorySidebarOpen(false);
+        setCategoryError("");
+      } catch (err) {
+        setCategoryError(
+          err instanceof Error ? err.message : "Error al crear categoría",
+        );
+      }
+    });
+  }
 
   // Refresh products list
   async function refreshProducts() {
@@ -191,7 +218,7 @@ export default function ProductManagementClient({
         description: createData.description || null,
         categoryId: createData.categoryId || null,
         category: createData.categoryId
-          ? categories.find((c) => c.id === createData.categoryId) || null
+          ? localCategories.find((c) => c.id === createData.categoryId) || null
           : null,
         imageUrl: createData.imageUrl || null,
         imagePublicId: createData.imagePublicId || null,
@@ -259,7 +286,7 @@ export default function ProductManagementClient({
         categoryId: data.categoryId,
         active: data.active,
         category: data.categoryId
-          ? categories.find((c) => c.id === data.categoryId) ||
+          ? localCategories.find((c) => c.id === data.categoryId) ||
             currentProduct.category
           : currentProduct.category,
       };
@@ -388,7 +415,7 @@ export default function ProductManagementClient({
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">Todas las Categorías</option>
-            {categories.map((cat) => (
+            {localCategories.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
               </option>
@@ -405,6 +432,27 @@ export default function ProductManagementClient({
             onChange={(e) => handleSearch(e.target.value)}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:w-64"
           />
+
+          {/* New category button */}
+          <button
+            onClick={() => setCategorySidebarOpen(true)}
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Nueva Categoría
+          </button>
 
           {/* New product button */}
           <button
@@ -539,7 +587,7 @@ export default function ProductManagementClient({
         >
           <ProductForm
             mode="create"
-            categories={categories}
+            categories={localCategories}
             onSubmit={handleCreateProduct}
             onCancel={() => {
               setCreateModalOpen(false);
@@ -566,7 +614,7 @@ export default function ProductManagementClient({
           <ProductForm
             mode="edit"
             product={editingProduct}
-            categories={categories}
+            categories={localCategories}
             onSubmit={(data) => handleUpdateProduct(editingProduct.id, data)}
             onCancel={() => {
               setEditModalOpen(false);
@@ -607,6 +655,19 @@ export default function ProductManagementClient({
           productName={deletingProduct.name}
           variantCount={deletingProduct.variants.length}
           isPending={isPending}
+        />
+      )}
+
+      {/* New category sidebar */}
+      {categorySidebarOpen && (
+        <CategorySidebar
+          onSubmit={handleCreateCategory}
+          onClose={() => {
+            setCategorySidebarOpen(false);
+            setCategoryError("");
+          }}
+          isPending={isPending}
+          error={categoryError}
         />
       )}
     </div>

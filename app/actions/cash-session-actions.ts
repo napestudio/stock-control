@@ -29,7 +29,6 @@ function serializeCashSession<T extends Record<string, unknown>>(session: T) {
     closingAmountDebitCard: session.closingAmountDebitCard ? Number(session.closingAmountDebitCard) : null,
     closingAmountTransfer: session.closingAmountTransfer ? Number(session.closingAmountTransfer) : null,
     closingAmountCheck: session.closingAmountCheck ? Number(session.closingAmountCheck) : null,
-    closingAmountOther: session.closingAmountOther ? Number(session.closingAmountOther) : null,
 
     // Per-method expected amounts
     expectedAmountCash: session.expectedAmountCash ? Number(session.expectedAmountCash) : null,
@@ -37,7 +36,6 @@ function serializeCashSession<T extends Record<string, unknown>>(session: T) {
     expectedAmountDebitCard: session.expectedAmountDebitCard ? Number(session.expectedAmountDebitCard) : null,
     expectedAmountTransfer: session.expectedAmountTransfer ? Number(session.expectedAmountTransfer) : null,
     expectedAmountCheck: session.expectedAmountCheck ? Number(session.expectedAmountCheck) : null,
-    expectedAmountOther: session.expectedAmountOther ? Number(session.expectedAmountOther) : null,
 
     // Per-method differences
     differenceCash: session.differenceCash ? Number(session.differenceCash) : null,
@@ -45,7 +43,6 @@ function serializeCashSession<T extends Record<string, unknown>>(session: T) {
     differenceDebitCard: session.differenceDebitCard ? Number(session.differenceDebitCard) : null,
     differenceTransfer: session.differenceTransfer ? Number(session.differenceTransfer) : null,
     differenceCheck: session.differenceCheck ? Number(session.differenceCheck) : null,
-    differenceOther: session.differenceOther ? Number(session.differenceOther) : null,
 
     // Legacy fields
     closingAmount: session.closingAmount ? Number(session.closingAmount) : null,
@@ -93,36 +90,37 @@ export async function openCashSession(data: OpenSessionInput) {
 
   // Transaction to ensure atomicity
   const newSession = await prisma.$transaction(async (tx) => {
-    // 1. Check if register has active session
+    // 1. Check if register has active OPEN session
     const activeRegisterSession = await tx.cashSession.findFirst({
       where: {
         cashRegisterId: validated.cashRegisterId,
-        closedAt: null,
+        status: "OPEN",
       },
     });
 
     if (activeRegisterSession) {
-      throw new Error("Esta caja ya tiene una sesión activa");
+      throw new Error("Esta caja ya tiene una sesión abierta");
     }
 
-    // 2. Check if user has active session
+    // 2. Check if user has active OPEN session
     const activeUserSession = await tx.cashSession.findFirst({
       where: {
         userId: session.user.id,
-        closedAt: null,
+        status: "OPEN",
       },
     });
 
     if (activeUserSession) {
-      throw new Error("Ya tiene una sesión activa en otra caja");
+      throw new Error("Ya tenés una sesión abierta en otra caja");
     }
 
-    // 3. Create session
+    // 3. Create session with OPEN status
     const cashSession = await tx.cashSession.create({
       data: {
         cashRegisterId: validated.cashRegisterId,
         userId: session.user.id,
         openingAmount: validated.openingAmount,
+        status: "OPEN",
       },
       include: {
         cashRegister: true,
@@ -136,15 +134,8 @@ export async function openCashSession(data: OpenSessionInput) {
       },
     });
 
-    // 4. Create opening movement
-    await tx.cashMovement.create({
-      data: {
-        sessionId: cashSession.id,
-        type: CashMovementType.OPENING,
-        amount: validated.openingAmount,
-        description: "Apertura de caja",
-      },
-    });
+    // NOTE: No longer create OPENING movement (deprecated type)
+    // Opening amount is tracked in cashSession.openingAmount field
 
     return cashSession;
   });
@@ -184,8 +175,8 @@ export async function getSessionClosingSummary(
     throw new Error("Sesión no encontrada");
   }
 
-  if (cashSession.closedAt) {
-    throw new Error("Esta sesión ya está cerrada");
+  if (cashSession.status !== "OPEN") {
+    throw new Error(`No se puede obtener resumen: sesión ${cashSession.status === "CLOSED" ? "cerrada" : "archivada"}`);
   }
 
   // Fetch sales separately to avoid Prisma IN (NULL) bug
@@ -210,7 +201,6 @@ export async function getSessionClosingSummary(
   let debitCardSalesTotal = 0;
   let transferSalesTotal = 0;
   let checkSalesTotal = 0;
-  let otherSalesTotal = 0;
 
   sales.forEach((sale) => {
     sale.payments.forEach((payment) => {
@@ -233,9 +223,6 @@ export async function getSessionClosingSummary(
         case PaymentMethod.CHECK:
           checkSalesTotal += amount;
           break;
-        case PaymentMethod.OTHER:
-          otherSalesTotal += amount;
-          break;
       }
     });
   });
@@ -255,14 +242,32 @@ export async function getSessionClosingSummary(
   let debitCardMovementsNet = 0;
   let transferMovementsNet = 0;
   let checkMovementsNet = 0;
-  let otherMovementsNet = 0;
 
   cashSession.movements.forEach((movement) => {
     const amount = Number(movement.amount);
     const isCash = movement.paymentMethod === PaymentMethod.CASH;
 
-    // Track by type
+    // Handle both new and deprecated movement types
     switch (movement.type) {
+      // NEW TYPES (post-refactor)
+      case CashMovementType.INCOME:
+        depositsTotal += amount;
+        if (isCash) cashDepositsTotal += amount;
+        break;
+      case CashMovementType.EXPENSE:
+        expensesTotal += amount;
+        if (isCash) cashExpensesTotal += amount;
+        break;
+      case CashMovementType.SALE:
+        // Sales are already counted in sales totals, skip to avoid double-counting
+        break;
+      case CashMovementType.REFUND:
+        // Refunds subtract from sales
+        expensesTotal += amount;
+        if (isCash) cashExpensesTotal += amount;
+        break;
+
+      // DEPRECATED TYPES (for archived sessions)
       case CashMovementType.DEPOSIT:
         depositsTotal += amount;
         if (isCash) cashDepositsTotal += amount;
@@ -271,14 +276,21 @@ export async function getSessionClosingSummary(
         withdrawalsTotal += amount;
         if (isCash) cashWithdrawalsTotal += amount;
         break;
-      case CashMovementType.EXPENSE:
-        expensesTotal += amount;
-        if (isCash) cashExpensesTotal += amount;
+      case CashMovementType.OPENING:
+      case CashMovementType.CLOSING:
+      case CashMovementType.ADJUSTMENT:
+        // Ignore deprecated types in calculations
         break;
     }
 
-    // Track by payment method (net: deposits +, withdrawals/expenses -)
-    const sign = movement.type === CashMovementType.DEPOSIT ? 1 : -1;
+    // Track by payment method (net: income/sale +, expense/refund -)
+    let sign = 0;
+    if (movement.type === CashMovementType.INCOME || movement.type === CashMovementType.SALE || movement.type === CashMovementType.DEPOSIT) {
+      sign = 1;
+    } else if (movement.type === CashMovementType.EXPENSE || movement.type === CashMovementType.REFUND || movement.type === CashMovementType.WITHDRAWAL) {
+      sign = -1;
+    }
+
     switch (movement.paymentMethod) {
       case PaymentMethod.CREDIT_CARD:
         creditCardMovementsNet += sign * amount;
@@ -291,9 +303,6 @@ export async function getSessionClosingSummary(
         break;
       case PaymentMethod.CHECK:
         checkMovementsNet += sign * amount;
-        break;
-      case PaymentMethod.OTHER:
-        otherMovementsNet += sign * amount;
         break;
     }
   });
@@ -310,7 +319,6 @@ export async function getSessionClosingSummary(
   const expectedDebitCard = debitCardSalesTotal + debitCardMovementsNet;
   const expectedTransfer = transferSalesTotal + transferMovementsNet;
   const expectedCheck = checkSalesTotal + checkMovementsNet;
-  const expectedOther = otherSalesTotal + otherMovementsNet;
 
   // Expected total counts all payment methods
   const expectedTotal =
@@ -318,8 +326,7 @@ export async function getSessionClosingSummary(
     expectedCreditCard +
     expectedDebitCard +
     expectedTransfer +
-    expectedCheck +
-    expectedOther;
+    expectedCheck;
 
   return {
     openingAmount,
@@ -329,7 +336,6 @@ export async function getSessionClosingSummary(
     debitCardSalesTotal,
     transferSalesTotal,
     checkSalesTotal,
-    otherSalesTotal,
     depositsTotal,
     withdrawalsTotal,
     expensesTotal,
@@ -342,7 +348,6 @@ export async function getSessionClosingSummary(
     expectedDebitCard,
     expectedTransfer,
     expectedCheck,
-    expectedOther,
     expectedTotal,
   };
 }
@@ -385,7 +390,7 @@ export async function closeCashSession(data: CloseSessionInput) {
   const validated = closeSessionSchema.parse(data);
 
   const closedSession = await prisma.$transaction(async (tx) => {
-    // Get session
+    // Get session first
     const cashSession = await tx.cashSession.findUnique({
       where: { id: validated.sessionId },
     });
@@ -394,8 +399,28 @@ export async function closeCashSession(data: CloseSessionInput) {
       throw new Error("Sesión no encontrada");
     }
 
-    if (cashSession.closedAt) {
+    if (cashSession.status === "CLOSED") {
       throw new Error("Esta sesión ya está cerrada");
+    }
+
+    if (cashSession.status === "ARCHIVED") {
+      throw new Error("No se puede cerrar una sesión archivada");
+    }
+
+    // CRITICAL VALIDATION: Check for open/pending sales (from reference implementation)
+    const openSales = await tx.sale.findMany({
+      where: {
+        sessionId: validated.sessionId,
+        status: "PENDING", // Only PENDING sales are considered "open"
+      },
+      select: { id: true },
+    });
+
+    if (openSales.length > 0) {
+      throw new Error(
+        `No se puede cerrar la caja con ventas pendientes (${openSales.length} pendiente${openSales.length > 1 ? "s" : ""}). ` +
+        `Completá o cancelá las ventas primero.`
+      );
     }
 
     // Check authorization (can close own session or any if admin)
@@ -416,7 +441,6 @@ export async function closeCashSession(data: CloseSessionInput) {
       debitCard: validated.closingAmountDebitCard ?? 0,
       transfer: validated.closingAmountTransfer ?? 0,
       check: validated.closingAmountCheck ?? 0,
-      other: validated.closingAmountOther ?? 0,
     };
 
     // Calculate differences per payment method
@@ -426,7 +450,6 @@ export async function closeCashSession(data: CloseSessionInput) {
       debitCard: closingAmounts.debitCard - summary.expectedDebitCard,
       transfer: closingAmounts.transfer - summary.expectedTransfer,
       check: closingAmounts.check - summary.expectedCheck,
-      other: closingAmounts.other - summary.expectedOther,
     };
 
     // Calculate totals for backwards compatibility
@@ -435,13 +458,12 @@ export async function closeCashSession(data: CloseSessionInput) {
       closingAmounts.creditCard +
       closingAmounts.debitCard +
       closingAmounts.transfer +
-      closingAmounts.check +
-      closingAmounts.other;
+      closingAmounts.check;
 
     const totalExpected = summary.expectedTotal;
     const totalDifference = totalClosing - totalExpected;
 
-    // Update session with all amounts
+    // Update session with all amounts and CLOSED status
     const updated = await tx.cashSession.update({
       where: { id: validated.sessionId },
       data: {
@@ -451,7 +473,6 @@ export async function closeCashSession(data: CloseSessionInput) {
         closingAmountDebitCard: closingAmounts.debitCard,
         closingAmountTransfer: closingAmounts.transfer,
         closingAmountCheck: closingAmounts.check,
-        closingAmountOther: closingAmounts.other,
 
         // Expected amounts per method
         expectedAmountCash: summary.expectedCash,
@@ -459,7 +480,6 @@ export async function closeCashSession(data: CloseSessionInput) {
         expectedAmountDebitCard: summary.expectedDebitCard,
         expectedAmountTransfer: summary.expectedTransfer,
         expectedAmountCheck: summary.expectedCheck,
-        expectedAmountOther: summary.expectedOther,
 
         // Differences per method
         differenceCash: differences.cash,
@@ -467,14 +487,17 @@ export async function closeCashSession(data: CloseSessionInput) {
         differenceDebitCard: differences.debitCard,
         differenceTransfer: differences.transfer,
         differenceCheck: differences.check,
-        differenceOther: differences.other,
 
         // Totals (backwards compatibility)
         closingAmount: totalClosing,
         expectedAmount: totalExpected,
         difference: totalDifference,
 
-        // Close the session
+        // Optional closing notes
+        closingNotes: validated.closingNotes || null,
+
+        // Close the session with CLOSED status
+        status: "CLOSED",
         closedAt: new Date(),
       },
       include: {
@@ -489,16 +512,8 @@ export async function closeCashSession(data: CloseSessionInput) {
       },
     });
 
-    // Create closing movement with total
-    await tx.cashMovement.create({
-      data: {
-        sessionId: validated.sessionId,
-        type: CashMovementType.CLOSING,
-        paymentMethod: PaymentMethod.CASH, // Default to CASH for closing movement
-        amount: totalClosing,
-        description: `Cierre de caja - Diferencia total: ${totalDifference >= 0 ? "+" : ""}${totalDifference.toFixed(2)}`,
-      },
-    });
+    // NOTE: No longer create CLOSING movement (deprecated type)
+    // All movement data is tracked in the session closing fields
 
     return updated;
   });
@@ -523,7 +538,7 @@ export async function addCashMovement(data: CashMovementInput) {
 
   const validated = cashMovementSchema.parse(data);
 
-  // Verify session exists and is open
+  // Verify session exists and is OPEN
   const cashSession = await prisma.cashSession.findUnique({
     where: { id: validated.sessionId },
   });
@@ -532,9 +547,13 @@ export async function addCashMovement(data: CashMovementInput) {
     throw new Error("Sesión no encontrada");
   }
 
-  if (cashSession.closedAt) {
-    throw new Error("No se pueden agregar movimientos a una sesión cerrada");
+  if (cashSession.status !== "OPEN") {
+    throw new Error(`No se pueden agregar movimientos a una sesión ${cashSession.status === "CLOSED" ? "cerrada" : "archivada"}`);
   }
+
+  // NOTE: Only INCOME and EXPENSE types are allowed for manual movements
+  // SALE and REFUND are created automatically from sales (see Phase 4)
+  // Schema validation enforces this restriction
 
   // Verify user owns this session or is admin
   const userIsAdmin = isAdmin(session);
@@ -545,7 +564,10 @@ export async function addCashMovement(data: CashMovementInput) {
   }
 
   const movement = await prisma.cashMovement.create({
-    data: validated,
+    data: {
+      ...validated,
+      createdBy: session.user.id,
+    },
   });
 
   revalidatePath("/panel/cash-registers");
@@ -652,7 +674,7 @@ export async function getMyActiveSession() {
   const activeSession = await prisma.cashSession.findFirst({
     where: {
       userId: session.user.id,
-      closedAt: null,
+      status: "OPEN",
     },
     include: {
       cashRegister: true,
@@ -682,10 +704,16 @@ export async function getMyActiveSession() {
     openingAmount: Number(activeSession.openingAmount),
     sales: sales.map((sale) => ({
       ...sale,
+      subtotal: Number(sale.subtotal),
+      tax: Number(sale.tax),
+      discount: Number(sale.discount),
       total: Number(sale.total),
+      totalCost: sale.totalCost ? Number(sale.totalCost) : null,
+      createdAt: sale.createdAt.toISOString(),
       payments: sale.payments.map((p) => ({
         ...p,
         amount: Number(p.amount),
+        createdAt: p.createdAt.toISOString(),
       })),
     })),
     movements: activeSession.movements.map((m) => ({
@@ -743,7 +771,6 @@ export async function getSessionDetails(sessionId: string) {
   let debitCardSalesTotal = 0;
   let transferSalesTotal = 0;
   let checkSalesTotal = 0;
-  let otherSalesTotal = 0;
 
   sales.forEach((sale) => {
     sale.payments.forEach((payment) => {
@@ -765,9 +792,6 @@ export async function getSessionDetails(sessionId: string) {
         case PaymentMethod.CHECK:
           checkSalesTotal += amount;
           break;
-        case PaymentMethod.OTHER:
-          otherSalesTotal += amount;
-          break;
       }
     });
   });
@@ -786,14 +810,12 @@ export async function getSessionDetails(sessionId: string) {
       debitCard: debitCardSalesTotal,
       transfer: transferSalesTotal,
       check: checkSalesTotal,
-      other: otherSalesTotal,
       total:
         cashSalesTotal +
         creditCardSalesTotal +
         debitCardSalesTotal +
         transferSalesTotal +
-        checkSalesTotal +
-        otherSalesTotal,
+        checkSalesTotal,
     },
   };
 }
@@ -957,6 +979,110 @@ export async function getCashMovementsHistory(
         count: item._count.id,
         total: item._sum.amount ? Number(item._sum.amount) : 0,
       })),
+    },
+  };
+}
+
+/**
+ * Record a SALE movement from a completed sale (automatic, not manual)
+ * This should be called from sale-actions.ts when a sale is completed
+ */
+export async function recordSalePayment(
+  sessionId: string,
+  saleId: string,
+  amount: number,
+  paymentMethod: PaymentMethod
+) {
+  const authSession = await auth();
+
+  if (!authSession?.user) {
+    throw new Error("No autenticado");
+  }
+
+  // Validate session is OPEN
+  const session = await prisma.cashSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.status !== "OPEN") {
+    throw new Error("La sesión no está abierta");
+  }
+
+  // Create SALE movement (amount always positive)
+  const movement = await prisma.cashMovement.create({
+    data: {
+      sessionId,
+      saleId,
+      type: CashMovementType.SALE,
+      paymentMethod,
+      amount: Math.abs(amount),
+      description: `Venta #${saleId.slice(0, 8)}`,
+      createdBy: authSession.user.id,
+    },
+  });
+
+  return {
+    success: true,
+    data: {
+      ...movement,
+      amount: Number(movement.amount),
+    },
+  };
+}
+
+/**
+ * Record a REFUND movement from a refunded/canceled sale (automatic, not manual)
+ * This should be called from sale-actions.ts when a sale is refunded
+ */
+export async function recordRefundPayment(
+  sessionId: string,
+  saleId: string,
+  amount: number,
+  paymentMethod: PaymentMethod
+) {
+  const authSession = await auth();
+
+  if (!authSession?.user) {
+    throw new Error("No autenticado");
+  }
+
+  // Validate session exists
+  const session = await prisma.cashSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session) {
+    throw new Error("Sesión no encontrada");
+  }
+
+  if (session.status === "ARCHIVED") {
+    throw new Error("No se pueden registrar devoluciones en sesiones archivadas");
+  }
+
+  // Allow refunds on CLOSED sessions (for historical corrections)
+  // but log a warning if session is closed
+  if (session.status === "CLOSED") {
+    console.warn(`Recording refund on CLOSED session ${sessionId}. This affects historical data.`);
+  }
+
+  // Create REFUND movement (amount always positive)
+  const movement = await prisma.cashMovement.create({
+    data: {
+      sessionId,
+      saleId,
+      type: CashMovementType.REFUND,
+      paymentMethod,
+      amount: Math.abs(amount),
+      description: `Devolución de venta #${saleId.slice(0, 8)}`,
+      createdBy: authSession.user.id,
+    },
+  });
+
+  return {
+    success: true,
+    data: {
+      ...movement,
+      amount: Number(movement.amount),
     },
   };
 }

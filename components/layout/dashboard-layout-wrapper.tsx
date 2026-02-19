@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./sidebar";
 import NavIcon from "./nav-icon";
+import FloatingToolbar from "@/components/toolbar/FloatingToolbar";
 import type { Session } from "next-auth";
 
 interface DashboardLayoutWrapperProps {
@@ -24,7 +25,7 @@ export default function DashboardLayoutWrapper({
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <div className="w-full py-6">
+      <div className="w-full py-6 lg:ml-96">
         {/* Mobile menu button */}
         <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center px-4">
           <button
@@ -39,6 +40,8 @@ export default function DashboardLayoutWrapper({
 
         {/* Main content */}
         <main className="pt-16 lg:pt-0 p-4 lg:p-8">{children}</main>
+
+        <FloatingToolbar />
       </div>
     </div>
   );

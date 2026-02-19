@@ -30,7 +30,6 @@ enum PaymentMethod {
   DEBIT_CARD
   TRANSFER
   CHECK
-  OTHER
 }
 
 enum PermissionKey {
@@ -45,26 +44,33 @@ enum PermissionKey {
   MANAGE_USERS
 }
 
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+  ARCHIVED // For historical data migration
+}
+
 // ======================================
 // AUTH & RBAC
 // ======================================
 
 model User {
-  id                    String   @id @default(uuid())
-  email                 String   @unique
+  id                    String  @id @default(uuid())
+  email                 String  @unique
   name                  String?
   password              String
-  requirePasswordChange Boolean  @default(false)
-  active                Boolean  @default(true)
+  requirePasswordChange Boolean @default(false)
+  active                Boolean @default(true)
 
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id])
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
 
-  sales     Sale[]
-  sessions  CashSession[]
+  sales         Sale[]
+  sessions      CashSession[]
+  cashMovements CashMovement[] @relation("CashMovementCreator")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@index([roleId])
@@ -72,8 +78,8 @@ model User {
 }
 
 model Role {
-  id          String           @id @default(uuid())
-  name        String           @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
   description String?
 
   users       User[]
@@ -81,19 +87,19 @@ model Role {
 }
 
 model Permission {
-  id      String         @id @default(uuid())
-  key     PermissionKey @unique
-  label   String
+  id    String        @id @default(uuid())
+  key   PermissionKey @unique
+  label String
 
-  roles   RolePermission[]
+  roles RolePermission[]
 }
 
 model RolePermission {
   roleId       String
   permissionId String
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@index([permissionId])
@@ -104,9 +110,10 @@ model RolePermission {
 // ======================================
 
 model ProductCategory {
-  id       String    @id @default(uuid())
-  name     String    @unique
-  products Product[]
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  products    Product[]
 }
 
 // ======================================
@@ -114,32 +121,32 @@ model ProductCategory {
 // ======================================
 
 model AttributeTemplate {
-  id           String   @id @default(uuid())
-  name         String   @unique  // "Size", "Color", "Material"
+  id           String  @id @default(uuid())
+  name         String  @unique // "Size", "Color", "Material"
   description  String?
-  displayOrder Int      @default(0)
-  active       Boolean  @default(true)
+  displayOrder Int     @default(0)
+  active       Boolean @default(true)
 
-  options      AttributeOption[]
+  options AttributeOption[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([active])
   @@index([displayOrder])
 }
 
 model AttributeOption {
-  id               String   @id @default(uuid())
-  templateId       String
-  value            String   // "Small", "Red", "Cotton"
-  displayOrder     Int      @default(0)
-  active           Boolean  @default(true)
+  id           String  @id @default(uuid())
+  templateId   String
+  value        String // "Small", "Red", "Cotton"
+  displayOrder Int     @default(0)
+  active       Boolean @default(true)
 
-  template         AttributeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  template          AttributeTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
   variantAttributes VariantAttribute[]
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([templateId, value])
   @@index([templateId])
@@ -147,12 +154,12 @@ model AttributeOption {
 }
 
 model VariantAttribute {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   variantId String
   optionId  String
 
-  variant   ProductVariant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  option    AttributeOption  @relation(fields: [optionId], references: [id], onDelete: Restrict)
+  variant ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  option  AttributeOption @relation(fields: [optionId], references: [id], onDelete: Restrict)
 
   @@unique([variantId, optionId])
   @@index([variantId])
@@ -166,48 +173,48 @@ model Product {
   categoryId  String?
   category    ProductCategory? @relation(fields: [categoryId], references: [id])
 
-  imageUrl      String?  // Full Cloudinary URL for display
-  imagePublicId String?  // Cloudinary public_id for deletion
+  imageUrl      String? // Full Cloudinary URL for display
+  imagePublicId String? // Cloudinary public_id for deletion
 
-  variants    ProductVariant[]
+  variants ProductVariant[]
 
-  active      Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([name])
   @@index([categoryId])
   @@index([deletedAt])
   @@index([imagePublicId])
-  @@index([deletedAt, active])  // Composite index for common filter queries
-  @@index([createdAt])           // For ordering by date
+  @@index([deletedAt, active]) // Composite index for common filter queries
+  @@index([createdAt]) // For ordering by date
 }
 
 model ProductVariant {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   productId String
-  sku       String   @unique
-  name      String?  // KEEP for backward compatibility
+  sku       String  @unique
+  name      String? // KEEP for backward compatibility
 
   // NEW FIELDS for variant attributes
-  imageUrl      String?  // Variant-specific image
-  imagePublicId String?  // Cloudinary public_id for deletion
-  displayName   String?  // "Medium / Red" - denormalized for performance
+  imageUrl      String? // Variant-specific image
+  imagePublicId String? // Cloudinary public_id for deletion
+  displayName   String? // "Medium / Red" - denormalized for performance
 
-  price     Decimal  @db.Decimal(10, 2)
-  costPrice Decimal  @db.Decimal(10, 2)
+  price     Decimal @db.Decimal(10, 2)
+  costPrice Decimal @db.Decimal(10, 2)
 
-  product    Product  @relation(fields: [productId], references: [id])
+  product    Product            @relation(fields: [productId], references: [id])
   stock      Stock?
   saleItems  SaleItem[]
   movements  StockMovement[]
-  attributes VariantAttribute[]  // NEW RELATION
+  attributes VariantAttribute[] // NEW RELATION
 
   @@index([productId])
-  @@index([sku])      // For SKU search optimization
+  @@index([sku]) // For SKU search optimization
   @@index([imagePublicId])
-  @@index([displayName])  // For search/filtering
+  @@index([displayName]) // For search/filtering
 }
 
 // ======================================
@@ -215,14 +222,14 @@ model ProductVariant {
 // ======================================
 
 model Stock {
-  id               String         @id @default(uuid())
-  productVariantId String         @unique
-  quantity         Int            @default(0)
-  minimumStock     Int            @default(0)
+  id               String @id @default(uuid())
+  productVariantId String @unique
+  quantity         Int    @default(0)
+  minimumStock     Int    @default(0)
 
-  variant          ProductVariant @relation(fields: [productVariantId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
 
-  updatedAt        DateTime       @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@index([minimumStock])
 }
@@ -234,12 +241,12 @@ model StockMovement {
   quantity         Int
   reason           String?
 
-  variant          ProductVariant    @relation(fields: [productVariantId], references: [id])
+  variant ProductVariant @relation(fields: [productVariantId], references: [id])
 
-  saleItemId       String?
-  saleItem         SaleItem?         @relation(fields: [saleItemId], references: [id])
+  saleItemId String?
+  saleItem   SaleItem? @relation(fields: [saleItemId], references: [id])
 
-  createdAt        DateTime          @default(now())
+  createdAt DateTime @default(now())
 
   @@index([productVariantId])
   @@index([saleItemId])
@@ -252,19 +259,29 @@ model StockMovement {
 // ======================================
 
 model Customer {
-  id        String   @id @default(uuid())
-  name      String?
-  email     String?
-  phone     String?
-  taxId     String?
+  id               String  @id @default(uuid())
+  firstName        String
+  lastName         String
+  email            String? @unique
+  phone            String?
+  address          String?
+  dni              String? @unique
+  membershipNumber String? @unique
 
-  sales     Sale[]
+  sales Sale[]
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([email])
   @@index([phone])
-  @@index([taxId])
+  @@index([firstName])
+  @@index([lastName])
+  @@index([dni])
+  @@index([membershipNumber])
+  @@index([deletedAt])
+  @@index([createdAt])
 }
 
 // ======================================
@@ -272,34 +289,38 @@ model Customer {
 // ======================================
 
 model Sale {
-  id         String     @id @default(uuid())
-  status     SaleStatus @default(COMPLETED)
+  id     String     @id @default(uuid())
+  status SaleStatus @default(COMPLETED)
 
-  sessionId  String?
-  session    CashSession? @relation(fields: [sessionId], references: [id])
+  sessionId String?
+  session   CashSession? @relation(fields: [sessionId], references: [id])
 
   userId     String
   customerId String?
 
-  subtotal   Decimal    @db.Decimal(10, 2)
-  tax        Decimal    @db.Decimal(10, 2) @default(0)
-  discount   Decimal    @db.Decimal(10, 2) @default(0)
-  total      Decimal    @db.Decimal(10, 2)
-  totalCost  Decimal?   @db.Decimal(10, 2)
+  subtotal  Decimal  @db.Decimal(10, 2)
+  tax       Decimal  @default(0) @db.Decimal(10, 2)
+  discount  Decimal  @default(0) @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+  totalCost Decimal? @db.Decimal(10, 2)
 
-  user       User       @relation(fields: [userId], references: [id])
-  customer   Customer?  @relation(fields: [customerId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
 
-  items      SaleItem[]
-  payments   Payment[]
+  items    SaleItem[]
+  payments Payment[]
 
-  createdAt  DateTime   @default(now())
+  // NEW: Link to cash movements for automatic SALE/REFUND tracking
+  cashMovements CashMovement[]
+
+  createdAt DateTime @default(now())
 
   @@index([createdAt])
   @@index([sessionId])
   @@index([userId])
   @@index([customerId])
   @@index([status])
+  @@index([userId, status])
 }
 
 // ======================================
@@ -307,17 +328,17 @@ model Sale {
 // ======================================
 
 model SaleItem {
-  id               String           @id @default(uuid())
+  id               String @id @default(uuid())
   saleId           String
   productVariantId String
   quantity         Int
 
-  priceAtSale      Decimal          @db.Decimal(10, 2)
-  costAtSale       Decimal          @db.Decimal(10, 2)
+  priceAtSale Decimal @db.Decimal(10, 2)
+  costAtSale  Decimal @db.Decimal(10, 2)
 
-  sale             Sale             @relation(fields: [saleId], references: [id])
-  variant          ProductVariant   @relation(fields: [productVariantId], references: [id])
-  stockMovements   StockMovement[]
+  sale           Sale            @relation(fields: [saleId], references: [id])
+  variant        ProductVariant  @relation(fields: [productVariantId], references: [id])
+  stockMovements StockMovement[]
 
   @@index([saleId])
   @@index([productVariantId])
@@ -328,14 +349,14 @@ model SaleItem {
 // ======================================
 
 model Payment {
-  id        String        @id @default(uuid())
-  saleId    String
-  method    PaymentMethod
-  amount    Decimal       @db.Decimal(10, 2)
+  id     String        @id @default(uuid())
+  saleId String
+  method PaymentMethod
+  amount Decimal       @db.Decimal(10, 2)
 
-  sale      Sale          @relation(fields: [saleId], references: [id])
+  sale Sale @relation(fields: [saleId], references: [id])
 
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   @@index([saleId])
   @@index([method])
@@ -346,87 +367,107 @@ model Payment {
 // ======================================
 
 model CashRegister {
-  id       String        @id @default(uuid())
-  name     String
-  active   Boolean       @default(true)
+  id     String  @id @default(uuid())
+  name   String
+  active Boolean @default(true)
 
   sessions CashSession[]
 }
 
 model CashSession {
-  id             String   @id @default(uuid())
+  id             String @id @default(uuid())
   cashRegisterId String
   userId         String
 
-  openingAmount  Decimal  @db.Decimal(10, 2)
+  // NEW: Explicit status field (more reliable than nullable closedAt)
+  status CashSessionStatus @default(OPEN)
 
-  // Closing amounts per payment method
-  closingAmountCash        Decimal? @db.Decimal(10, 2)
-  closingAmountCreditCard  Decimal? @db.Decimal(10, 2)
-  closingAmountDebitCard   Decimal? @db.Decimal(10, 2)
-  closingAmountTransfer    Decimal? @db.Decimal(10, 2)
-  closingAmountCheck       Decimal? @db.Decimal(10, 2)
-  closingAmountOther       Decimal? @db.Decimal(10, 2)
+  openingAmount Decimal @db.Decimal(10, 2)
 
-  // Expected amounts per payment method (for audit)
-  expectedAmountCash        Decimal? @db.Decimal(10, 2)
-  expectedAmountCreditCard  Decimal? @db.Decimal(10, 2)
-  expectedAmountDebitCard   Decimal? @db.Decimal(10, 2)
-  expectedAmountTransfer    Decimal? @db.Decimal(10, 2)
-  expectedAmountCheck       Decimal? @db.Decimal(10, 2)
-  expectedAmountOther       Decimal? @db.Decimal(10, 2)
+  // Closing amounts per payment method (all-methods verification requirement)
+  closingAmountCash       Decimal? @db.Decimal(10, 2)
+  closingAmountCreditCard Decimal? @db.Decimal(10, 2)
+  closingAmountDebitCard  Decimal? @db.Decimal(10, 2)
+  closingAmountTransfer   Decimal? @db.Decimal(10, 2)
+  closingAmountCheck      Decimal? @db.Decimal(10, 2)
+  // REMOVED: closingAmountOther (unused field)
 
-  // Differences per payment method (for quick analysis)
-  differenceCash        Decimal? @db.Decimal(10, 2)
-  differenceCreditCard  Decimal? @db.Decimal(10, 2)
-  differenceDebitCard   Decimal? @db.Decimal(10, 2)
-  differenceTransfer    Decimal? @db.Decimal(10, 2)
-  differenceCheck       Decimal? @db.Decimal(10, 2)
-  differenceOther       Decimal? @db.Decimal(10, 2)
+  // Expected amounts per payment method (calculated from movements)
+  expectedAmountCash       Decimal? @db.Decimal(10, 2)
+  expectedAmountCreditCard Decimal? @db.Decimal(10, 2)
+  expectedAmountDebitCard  Decimal? @db.Decimal(10, 2)
+  expectedAmountTransfer   Decimal? @db.Decimal(10, 2)
+  expectedAmountCheck      Decimal? @db.Decimal(10, 2)
+  // REMOVED: expectedAmountOther (unused field)
+
+  // Differences per payment method (closing - expected)
+  differenceCash       Decimal? @db.Decimal(10, 2)
+  differenceCreditCard Decimal? @db.Decimal(10, 2)
+  differenceDebitCard  Decimal? @db.Decimal(10, 2)
+  differenceTransfer   Decimal? @db.Decimal(10, 2)
+  differenceCheck      Decimal? @db.Decimal(10, 2)
+  // REMOVED: differenceOther (unused field)
 
   // Backwards compatibility - sum of all payment methods
   closingAmount  Decimal? @db.Decimal(10, 2)
   expectedAmount Decimal? @db.Decimal(10, 2)
   difference     Decimal? @db.Decimal(10, 2)
 
-  openedAt       DateTime @default(now())
-  closedAt       DateTime?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  closingNotes String?
 
-  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  sales          Sale[]
-  movements      CashMovement[]
+  cashRegister CashRegister   @relation(fields: [cashRegisterId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  sales        Sale[]
+  movements    CashMovement[]
 
   @@index([cashRegisterId])
   @@index([userId])
   @@index([openedAt])
   @@index([closedAt])
+  @@index([status])
+  @@index([cashRegisterId, status])
 }
 
 enum CashMovementType {
-  OPENING         // Initial cash deposit when opening session
-  CLOSING         // Final cash withdrawal when closing session
-  DEPOSIT         // Cash added during session
-  WITHDRAWAL      // Cash removed during session
-  EXPENSE         // Business expense paid in cash
-  REFUND          // Cash refund (may link to sale)
-  ADJUSTMENT      // Manual correction
+  INCOME // Manual cash in (replaces DEPOSIT)
+  EXPENSE // Manual cash out (replaces WITHDRAWAL/EXPENSE)
+  SALE // Automatic from sale completion
+  REFUND // Automatic from sale cancellation/refund
+
+  // DEPRECATED - kept for migration compatibility
+  OPENING // Will be archived
+  CLOSING // Will be archived
+  DEPOSIT // Will be archived
+  WITHDRAWAL // Will be archived
+  ADJUSTMENT // Will be archived
 }
 
 model CashMovement {
-  id            String            @id @default(uuid())
+  id            String           @id @default(uuid())
   sessionId     String
   type          CashMovementType
-  paymentMethod PaymentMethod     @default(CASH)
-  amount        Decimal           @db.Decimal(10, 2)
+  paymentMethod PaymentMethod    @default(CASH)
+  amount        Decimal          @db.Decimal(10, 2)
   description   String?
 
-  session       CashSession       @relation(fields: [sessionId], references: [id])
+  // NEW: Link to sales for automatic SALE/REFUND movements
+  saleId String?
 
-  createdAt     DateTime          @default(now())
+  // Audit trail: track who created the movement
+  createdBy String
+
+  session CashSession @relation(fields: [sessionId], references: [id])
+  sale    Sale?       @relation(fields: [saleId], references: [id])
+  creator User        @relation("CashMovementCreator", fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
 
   @@index([sessionId])
   @@index([type])
   @@index([createdAt])
   @@index([paymentMethod])
+  @@index([saleId])
+  @@index([createdBy])
 }

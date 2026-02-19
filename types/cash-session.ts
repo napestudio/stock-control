@@ -1,4 +1,4 @@
-import { Prisma, PaymentMethod, CashMovementType } from "@prisma/client";
+import { Prisma, PaymentMethod, CashMovementType, CashSessionStatus } from "@prisma/client";
 
 // Full session with all relations
 const cashSessionWithDetails = Prisma.validator<Prisma.CashSessionDefaultArgs>()({
@@ -34,19 +34,16 @@ export type CashSessionSerialized = Omit<
   | "closingAmountDebitCard"
   | "closingAmountTransfer"
   | "closingAmountCheck"
-  | "closingAmountOther"
   | "expectedAmountCash"
   | "expectedAmountCreditCard"
   | "expectedAmountDebitCard"
   | "expectedAmountTransfer"
   | "expectedAmountCheck"
-  | "expectedAmountOther"
   | "differenceCash"
   | "differenceCreditCard"
   | "differenceDebitCard"
   | "differenceTransfer"
   | "differenceCheck"
-  | "differenceOther"
   | "sales"
   | "movements"
   | "openedAt"
@@ -60,7 +57,6 @@ export type CashSessionSerialized = Omit<
   closingAmountDebitCard: number | null;
   closingAmountTransfer: number | null;
   closingAmountCheck: number | null;
-  closingAmountOther: number | null;
 
   // Per-method expected amounts
   expectedAmountCash: number | null;
@@ -68,7 +64,6 @@ export type CashSessionSerialized = Omit<
   expectedAmountDebitCard: number | null;
   expectedAmountTransfer: number | null;
   expectedAmountCheck: number | null;
-  expectedAmountOther: number | null;
 
   // Per-method differences
   differenceCash: number | null;
@@ -76,7 +71,6 @@ export type CashSessionSerialized = Omit<
   differenceDebitCard: number | null;
   differenceTransfer: number | null;
   differenceCheck: number | null;
-  differenceOther: number | null;
 
   // Backwards compatibility fields
   closingAmount: number | null;
@@ -87,11 +81,17 @@ export type CashSessionSerialized = Omit<
   closedAt: string | null;
   sales: Array<{
     id: string;
+    subtotal: number;
+    tax: number;
+    discount: number;
     total: number;
+    totalCost: number | null;
+    createdAt: string;
     payments: Array<{
       id: string;
       method: PaymentMethod;
       amount: number;
+      createdAt: string;
     }>;
   }>;
   movements: Array<{
@@ -103,6 +103,23 @@ export type CashSessionSerialized = Omit<
     createdAt: string;
   }>;
 };
+
+// Cash movement with sale details (for SALE/REFUND types)
+export interface CashMovementWithSale {
+  id: string;
+  type: CashMovementType;
+  paymentMethod: PaymentMethod;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+  saleId: string | null;
+  sale?: {
+    id: string;
+    status: string;
+    total: number;
+    createdAt: string;
+  } | null;
+}
 
 // Payment summary by method
 export interface PaymentMethodSummary {
@@ -122,7 +139,6 @@ export interface SessionClosingSummary {
   debitCardSalesTotal: number;
   transferSalesTotal: number;
   checkSalesTotal: number;
-  otherSalesTotal: number;
 
   // Cash movements (all payment methods)
   depositsTotal: number;
@@ -140,7 +156,6 @@ export interface SessionClosingSummary {
   expectedDebitCard: number;
   expectedTransfer: number;
   expectedCheck: number;
-  expectedOther: number;
 
   // Total expected across all payment methods
   expectedTotal: number;
@@ -156,7 +171,6 @@ export interface CloseSessionFormData {
   closingAmountDebitCard?: number;
   closingAmountTransfer?: number;
   closingAmountCheck?: number;
-  closingAmountOther?: number;
 }
 
 // Per-method verification result
@@ -181,22 +195,46 @@ export interface SessionClosingVerification {
   canClose: boolean; // Always true, but UI can warn if major discrepancies
 }
 
+// Constants for labels
+export const MOVEMENT_TYPE_LABELS: Record<CashMovementType, string> = {
+  INCOME: "Ingreso Manual",
+  EXPENSE: "Egreso Manual",
+  SALE: "Venta",
+  REFUND: "Devolución",
+
+  // DEPRECATED - kept for backwards compatibility with archived data
+  OPENING: "Apertura (Archivado)",
+  CLOSING: "Cierre (Archivado)",
+  DEPOSIT: "Depósito (Archivado)",
+  WITHDRAWAL: "Retiro (Archivado)",
+  ADJUSTMENT: "Ajuste (Archivado)",
+} as const;
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: "Efectivo",
+  CREDIT_CARD: "Tarjeta Crédito",
+  DEBIT_CARD: "Tarjeta Débito",
+  TRANSFER: "Transferencia",
+  CHECK: "Cheque",
+} as const;
+
+export const SESSION_STATUS_LABELS: Record<CashSessionStatus, string> = {
+  OPEN: "Abierta",
+  CLOSED: "Cerrada",
+  ARCHIVED: "Archivada",
+} as const;
+
 // Helper function to get Spanish labels for payment methods
 export function getPaymentMethodLabel(method: PaymentMethod): string {
-  switch (method) {
-    case PaymentMethod.CASH:
-      return "Efectivo";
-    case PaymentMethod.CREDIT_CARD:
-      return "Tarjeta de Crédito";
-    case PaymentMethod.DEBIT_CARD:
-      return "Tarjeta de Débito";
-    case PaymentMethod.TRANSFER:
-      return "Transferencia";
-    case PaymentMethod.CHECK:
-      return "Cheque";
-    case PaymentMethod.OTHER:
-      return "Otro";
-    default:
-      return "Desconocido";
-  }
+  return PAYMENT_METHOD_LABELS[method] || "Desconocido";
+}
+
+// Helper function to get Spanish labels for movement types
+export function getMovementTypeLabel(type: CashMovementType): string {
+  return MOVEMENT_TYPE_LABELS[type] || "Desconocido";
+}
+
+// Helper function to get Spanish labels for session status
+export function getSessionStatusLabel(status: CashSessionStatus): string {
+  return SESSION_STATUS_LABELS[status] || "Desconocido";
 }

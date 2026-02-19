@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { useState, useRef, useEffect } from "react";
 import { navigationItems } from "@/lib/config/navigation";
 import { isAdmin } from "@/lib/utils/auth-helpers";
 import NavIcon from "./nav-icon";
@@ -20,6 +21,21 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
+  const [dropupOpen, setDropupOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setDropupOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Filter navigation items based on user role
   const visibleItems = navigationItems.filter((item) => {
@@ -48,9 +64,9 @@ export default function Sidebar({
 
       <aside
         className={`
-        fixed top-0 left-0 h-svh w-96 bg-white shadow-lg z-50
+        fixed top-0 left-0 h-svh w-72 bg-white shadow-lg z-50
         transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:z-auto flex justify-between flex-col
+        lg:translate-x-0 flex justify-between flex-col
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
       `}
       >
@@ -99,27 +115,61 @@ export default function Sidebar({
           </ul>
         </nav>
 
-        <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+        <div className="border-t border-gray-200 p-3 relative" ref={userMenuRef}>
+          {dropupOpen && (
+            <div className="absolute bottom-full left-3 right-3 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                Cerrar sesión
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setDropupOpen((v) => !v)}
+            className="w-full flex items-center gap-3 rounded-lg hover:bg-gray-50 p-2 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
               <span className="text-indigo-600 font-semibold text-sm">
                 {session.user.name?.[0]?.toUpperCase() ||
                   session.user.email?.[0]?.toUpperCase() ||
                   "U"}
               </span>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {session.user.name || session.user.email}
               </p>
               <p className="text-xs text-gray-500">{session.user.role}</p>
             </div>
-          </div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-          >
-            Cerrar sesión
+            <svg
+              className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${dropupOpen ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
           </button>
         </div>
       </aside>

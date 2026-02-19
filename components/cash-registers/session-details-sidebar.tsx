@@ -55,12 +55,12 @@ export default function SessionDetailsSidebar({
     resolver: zodResolver(closeSessionSchema),
     defaultValues: {
       sessionId,
-      closingAmountCash: undefined,
+      closingAmountCash: 0, // CASH is always required (per plan)
       closingAmountCreditCard: undefined,
       closingAmountDebitCard: undefined,
       closingAmountTransfer: undefined,
       closingAmountCheck: undefined,
-      closingAmountOther: undefined,
+      closingNotes: "",
     },
   });
 
@@ -153,15 +153,6 @@ export default function SessionDetailsSidebar({
       });
     }
 
-    if (closingSummary.expectedOther > 0.01) {
-      methods.push({
-        method: PaymentMethod.OTHER,
-        label: "Otro",
-        fieldName: "closingAmountOther",
-        expected: closingSummary.expectedOther,
-      });
-    }
-
     return methods;
   }, [closingSummary]);
 
@@ -233,13 +224,14 @@ export default function SessionDetailsSidebar({
     }
   }
 
-  // Group movements by type and payment method
+  // Group movements by type and payment method, including sales
   function groupMovementsByPaymentMethod(
     movements: SessionDetails["movements"],
+    salesByMethod: SessionDetails["salesByPaymentMethod"],
   ) {
     const ingreso: Record<
       string,
-      { total: number; movements: typeof movements }
+      { total: number; movements: typeof movements; salesTotal: number }
     > = {};
     const egreso: Record<
       string,
@@ -249,23 +241,60 @@ export default function SessionDetailsSidebar({
     let ingresoTotal = 0;
     let egresoTotal = 0;
 
+    // Add sales to ingreso by payment method
+    const salesMap = {
+      [getPaymentMethodLabel(PaymentMethod.CASH)]: salesByMethod.cash,
+      [getPaymentMethodLabel(PaymentMethod.CREDIT_CARD)]:
+        salesByMethod.creditCard,
+      [getPaymentMethodLabel(PaymentMethod.DEBIT_CARD)]:
+        salesByMethod.debitCard,
+      [getPaymentMethodLabel(PaymentMethod.TRANSFER)]: salesByMethod.transfer,
+      [getPaymentMethodLabel(PaymentMethod.CHECK)]: salesByMethod.check,
+    };
+
+    Object.entries(salesMap).forEach(([paymentMethod, salesTotal]) => {
+      if (salesTotal > 0) {
+        if (!ingreso[paymentMethod]) {
+          ingreso[paymentMethod] = { total: 0, movements: [], salesTotal: 0 };
+        }
+        ingreso[paymentMethod].salesTotal = salesTotal;
+        ingreso[paymentMethod].total += salesTotal;
+        ingresoTotal += salesTotal;
+      }
+    });
+
+    // Process movements
     movements.forEach((movement) => {
       const amount = movement.amount;
       const paymentMethod = getPaymentMethodLabel(movement.paymentMethod);
 
-      if (movement.type === CashMovementType.DEPOSIT) {
-        // INGRESO
+      // INGRESO: INCOME and SALE movements
+      if (movement.type === CashMovementType.INCOME || movement.type === CashMovementType.SALE) {
         if (!ingreso[paymentMethod]) {
-          ingreso[paymentMethod] = { total: 0, movements: [] };
+          ingreso[paymentMethod] = { total: 0, movements: [], salesTotal: 0 };
         }
         ingreso[paymentMethod].total += amount;
         ingreso[paymentMethod].movements.push(movement);
         ingresoTotal += amount;
-      } else if (
-        movement.type === CashMovementType.WITHDRAWAL ||
-        movement.type === CashMovementType.EXPENSE
-      ) {
-        // EGRESO
+      }
+      // EGRESO: EXPENSE and REFUND movements
+      else if (movement.type === CashMovementType.EXPENSE || movement.type === CashMovementType.REFUND) {
+        if (!egreso[paymentMethod]) {
+          egreso[paymentMethod] = { total: 0, movements: [] };
+        }
+        egreso[paymentMethod].total += amount;
+        egreso[paymentMethod].movements.push(movement);
+        egresoTotal += amount;
+      }
+      // Handle deprecated types for archived sessions
+      else if (movement.type === CashMovementType.DEPOSIT) {
+        if (!ingreso[paymentMethod]) {
+          ingreso[paymentMethod] = { total: 0, movements: [], salesTotal: 0 };
+        }
+        ingreso[paymentMethod].total += amount;
+        ingreso[paymentMethod].movements.push(movement);
+        ingresoTotal += amount;
+      } else if (movement.type === CashMovementType.WITHDRAWAL) {
         if (!egreso[paymentMethod]) {
           egreso[paymentMethod] = { total: 0, movements: [] };
         }
@@ -280,14 +309,21 @@ export default function SessionDetailsSidebar({
 
   function getMovementTypeLabel(type: CashMovementType): string {
     switch (type) {
+      case CashMovementType.INCOME:
+        return "Ingreso Manual";
+      case CashMovementType.EXPENSE:
+        return "Egreso Manual";
+      case CashMovementType.SALE:
+        return "Venta";
+      case CashMovementType.REFUND:
+        return "Devolución";
+      // Deprecated types for archived sessions
       case CashMovementType.OPENING:
         return "Apertura";
       case CashMovementType.DEPOSIT:
-        return "Ingreso";
+        return "Depósito";
       case CashMovementType.WITHDRAWAL:
         return "Retiro";
-      case CashMovementType.EXPENSE:
-        return "Egreso";
       default:
         return "Desconocido";
     }
@@ -295,14 +331,21 @@ export default function SessionDetailsSidebar({
 
   function getMovementTypeColor(type: CashMovementType): string {
     switch (type) {
+      case CashMovementType.INCOME:
+        return "text-green-700 bg-green-50";
+      case CashMovementType.SALE:
+        return "text-blue-700 bg-blue-50";
+      case CashMovementType.EXPENSE:
+        return "text-red-700 bg-red-50";
+      case CashMovementType.REFUND:
+        return "text-orange-700 bg-orange-50";
+      // Deprecated types for archived sessions
       case CashMovementType.OPENING:
         return "text-blue-700 bg-blue-50";
       case CashMovementType.DEPOSIT:
         return "text-green-700 bg-green-50";
       case CashMovementType.WITHDRAWAL:
         return "text-orange-700 bg-orange-50";
-      case CashMovementType.EXPENSE:
-        return "text-red-700 bg-red-50";
       default:
         return "text-gray-700 bg-gray-50";
     }
@@ -329,12 +372,9 @@ export default function SessionDetailsSidebar({
               session.movements.filter(
                 (m) => m.type !== CashMovementType.OPENING,
               ),
+              session.salesByPaymentMethod,
             );
-          const total =
-            session.openingAmount +
-            session.salesByPaymentMethod.total +
-            ingresoTotal -
-            egresoTotal;
+          const total = session.openingAmount + ingresoTotal - egresoTotal;
 
           return (
             <div className="space-y-4">
@@ -396,17 +436,7 @@ export default function SessionDetailsSidebar({
                   </span>
                 </div>
 
-                {/* VENTAS */}
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    VENTAS
-                  </span>
-                  <span className="font-semibold">
-                    ${session.salesByPaymentMethod.total.toFixed(2)}
-                  </span>
-                </div>
-
-                {/* INGRESO - Fixed Title */}
+                {/* INGRESO - Fixed Title (includes sales and deposits) */}
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm font-medium text-green-700">
@@ -454,7 +484,10 @@ export default function SessionDetailsSidebar({
                                   {paymentMethod}
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  ({data.movements.length})
+                                  (
+                                  {data.movements.length +
+                                    (data.salesTotal > 0 ? 1 : 0)}
+                                  )
                                 </span>
                               </div>
                               <span className="text-sm font-semibold text-green-600">
@@ -462,9 +495,28 @@ export default function SessionDetailsSidebar({
                               </span>
                             </button>
 
-                            {/* Movement Cards */}
+                            {/* Sales and Movement Cards */}
                             {isExpanded && (
                               <div className="p-2 space-y-2 bg-white">
+                                {/* Sales Total Card (if any) */}
+                                {data.salesTotal > 0 && (
+                                  <div className="bg-white border border-green-200 rounded-md p-3">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <span className="text-xs font-medium px-2 py-1 rounded text-green-700 bg-green-50">
+                                        Ventas
+                                      </span>
+                                      <span className="text-sm font-semibold text-green-700">
+                                        +${data.salesTotal.toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                      Ingresos por ventas realizadas en esta
+                                      sesión
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Deposit Movement Cards */}
                                 {data.movements.map((movement) => (
                                   <button
                                     key={movement.id}
@@ -680,6 +732,12 @@ export default function SessionDetailsSidebar({
                         {Math.abs(session.difference || 0).toFixed(2)}
                       </span>
                     </div>
+                    {session.closingNotes && (
+                      <div className="pt-3 border-t border-gray-200">
+                        <span className="text-sm text-gray-600">Comentarios:</span>
+                        <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{session.closingNotes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -696,7 +754,7 @@ export default function SessionDetailsSidebar({
                     </h4>
 
                     {/* Info box */}
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                    {/* <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
                       <p className="font-medium mb-1">
                         Ingrese los montos verificados:
                       </p>
@@ -708,7 +766,7 @@ export default function SessionDetailsSidebar({
                         <li>Transferencias: Revise confirmaciones recibidas</li>
                         <li>Cheques: Cuente los cheques recibidos</li>
                       </ul>
-                    </div>
+                    </div> */}
 
                     {/* Input fields for each used payment method */}
                     <div className="space-y-4 mb-4">
@@ -804,6 +862,28 @@ export default function SessionDetailsSidebar({
                       </div>
                     </div>
 
+                    {/* Closing Notes (optional) */}
+                    <div className="mt-4">
+                      <label
+                        htmlFor="closingNotes"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Comentarios (opcional)
+                      </label>
+                      <textarea
+                        id="closingNotes"
+                        {...registerClose("closingNotes")}
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                        placeholder="Ej: Diferencia explicada por billetes rotos, fondo de cambio faltante, etc."
+                      />
+                      {closeErrors.closingNotes && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {closeErrors.closingNotes.message}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Warning if major discrepancies */}
                     {verifications.some(
                       (v) => v.discrepancyLevel === "major",
@@ -813,8 +893,7 @@ export default function SessionDetailsSidebar({
                           ⚠️ Atención: Discrepancia Significativa
                         </p>
                         <p className="mt-1">
-                          Se detectaron diferencias mayores a $10. Verifique los
-                          montos antes de cerrar.
+                          Se detectaron diferencias mayores a $10. Por favor agregue un comentario explicando la discrepancia.
                         </p>
                       </div>
                     )}
