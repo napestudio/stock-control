@@ -91,9 +91,10 @@ export const editProductSchema = z.object({
   imagePublicId: imagePublicIdSchema,
 });
 
-// Category schema
+// Category schemas
 export const createCategorySchema = z.object({
   name: z.string().min(1, "El nombre de categoría es obligatorio").max(100, "El nombre de categoría debe tener 100 caracteres o menos"),
+  description: z.string().max(300, "La descripción debe tener 300 caracteres o menos").optional(),
 });
 
 export const editCategorySchema = z.object({

@@ -321,7 +321,14 @@ export async function getStockMovements(
   ]);
 
   return {
-    movements,
+    movements: movements.map((m) => ({
+      ...m,
+      variant: {
+        ...m.variant,
+        price: Number(m.variant.price),
+        costPrice: Number(m.variant.costPrice),
+      },
+    })),
     pagination: {
       page,
       pageSize,

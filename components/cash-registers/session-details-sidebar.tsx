@@ -732,6 +732,12 @@ export default function SessionDetailsSidebar({
                         {Math.abs(session.difference || 0).toFixed(2)}
                       </span>
                     </div>
+                    {session.closingNotes && (
+                      <div className="pt-3 border-t border-gray-200">
+                        <span className="text-sm text-gray-600">Comentarios:</span>
+                        <p className="text-sm text-gray-800 mt-1 whitespace-pre-wrap">{session.closingNotes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

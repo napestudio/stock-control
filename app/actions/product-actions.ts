@@ -4,8 +4,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/utils/auth-helpers";
 import {
+  createCategorySchema,
   createProductSchema,
   editProductSchema,
+  type CreateCategoryInput,
   type CreateProductInput,
   type EditProductInput,
 } from "@/lib/validations/product-schema";
@@ -603,15 +605,17 @@ export async function getCategories() {
 /**
  * Create a new category
  */
-export async function createCategory(name: string) {
+export async function createCategory(data: CreateCategoryInput) {
   const session = await auth();
 
   if (!isAdmin(session)) {
     throw new Error("Unauthorized: Admin access required");
   }
 
+  const validated = createCategorySchema.parse(data);
+
   const category = await prisma.productCategory.create({
-    data: { name },
+    data: { name: validated.name, description: validated.description },
   });
 
   revalidatePath("/panel/products");
