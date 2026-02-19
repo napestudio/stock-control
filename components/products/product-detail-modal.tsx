@@ -21,7 +21,7 @@ export default function ProductDetailModal({
 }: ProductDetailModalProps) {
   const totalStock = product.variants.reduce(
     (sum, v) => sum + (v.stock?.quantity || 0),
-    0
+    0,
   );
 
   return (
@@ -66,10 +66,10 @@ export default function ProductDetailModal({
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500">
-                Stock Total
-              </h3>
-              <p className="mt-1 text-sm text-gray-900">{totalStock} unidades</p>
+              <h3 className="text-sm font-medium text-gray-500">Stock Total</h3>
+              <p className="mt-1 text-sm text-gray-900">
+                {totalStock} unidades
+              </p>
             </div>
           </div>
         </div>
@@ -111,32 +111,37 @@ export default function ProductDetailModal({
                   <tr key={variant.id}>
                     <td className="px-4 py-2">
                       <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100">
-                        <Image
-                          src={
-                            variant.imageUrl ||
-                            product.imageUrl ||
-                            "/placeholder-product.png"
-                          }
-                          alt={variant.displayName || variant.name || "Variant"}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
+                        {variant.imageUrl || product.imageUrl ? (
+                          <Image
+                            src={variant.imageUrl || product.imageUrl || ""}
+                            alt={
+                              variant.displayName || variant.name || "Variant"
+                            }
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400"></div>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-2">
-                      {variant.attributes && Array.isArray(variant.attributes) && variant.attributes.length > 0 ? (
+                      {variant.attributes &&
+                      Array.isArray(variant.attributes) &&
+                      variant.attributes.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {variant.attributes.map((attr) => (
-                            attr?.option?.value && (
-                              <span
-                                key={attr.id}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
-                              >
-                                {attr.option.value}
-                              </span>
-                            )
-                          ))}
+                          {variant.attributes.map(
+                            (attr) =>
+                              attr?.option?.value && (
+                                <span
+                                  key={attr.id}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                                >
+                                  {attr.option.value}
+                                </span>
+                              ),
+                          )}
                         </div>
                       ) : (
                         <span className="text-sm text-gray-500">
@@ -144,7 +149,7 @@ export default function ProductDetailModal({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2 text-sm font-mono text-gray-900">
+                    <td className="px-4 py-2 text-sm font-mono text-gray-900 whitespace-nowrap">
                       {variant.sku}
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-900 text-right">
@@ -159,9 +164,9 @@ export default function ProductDetailModal({
                     <td className="px-4 py-2 text-center">
                       <div className="flex flex-col items-center gap-1">
                         <QRCodeSVG value={variant.sku} size={48} />
-                        <span className="text-xs text-gray-400">
+                        {/* <span className="text-xs text-gray-400 whitespace-nowrap">
                           {variant.sku}
-                        </span>
+                        </span> */}
                       </div>
                     </td>
                   </tr>

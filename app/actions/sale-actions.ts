@@ -26,6 +26,7 @@ import type {
   SaleSummary,
   SaleWithRelations,
 } from "@/types/sale";
+import type { VariantScanDetail } from "@/types/toolbar";
 import { CashMovementType, Prisma, SaleStatus, StockMovementType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getMyActiveSession } from "./cash-session-actions";
@@ -1427,6 +1428,55 @@ export async function getSalesHistory(
       totalPages,
       hasMore,
     },
+  };
+}
+
+/**
+ * Get full variant details by SKU for QR scan dialog
+ * Returns richer data than getVariantBySkuForSale (includes images and description)
+ */
+export async function getVariantDetailsBySku(
+  sku: string,
+): Promise<VariantScanDetail | null> {
+  const session = await auth();
+
+  if (!session?.user) {
+    throw new Error("No autenticado");
+  }
+
+  const variant = await prisma.productVariant.findUnique({
+    where: { sku },
+    include: {
+      product: {
+        select: {
+          name: true,
+          description: true,
+          imageUrl: true,
+          active: true,
+          deletedAt: true,
+        },
+      },
+      stock: {
+        select: { quantity: true },
+      },
+    },
+  });
+
+  if (!variant || !variant.product.active || variant.product.deletedAt) {
+    return null;
+  }
+
+  return {
+    id: variant.id,
+    sku: variant.sku,
+    displayName: variant.displayName || variant.name || null,
+    productName: variant.product.name,
+    productDescription: variant.product.description || null,
+    productImageUrl: variant.product.imageUrl || null,
+    variantImageUrl: variant.imageUrl || null,
+    price: Number(variant.price),
+    costPrice: Number(variant.costPrice),
+    stockQuantity: variant.stock?.quantity ?? 0,
   };
 }
 

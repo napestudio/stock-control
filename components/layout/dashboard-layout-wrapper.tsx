@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./sidebar";
 import NavIcon from "./nav-icon";
+import FloatingToolbar from "@/components/toolbar/FloatingToolbar";
 import type { Session } from "next-auth";
 
 interface DashboardLayoutWrapperProps {
@@ -39,6 +40,8 @@ export default function DashboardLayoutWrapper({
 
         {/* Main content */}
         <main className="pt-16 lg:pt-0 p-4 lg:p-8">{children}</main>
+
+        <FloatingToolbar />
       </div>
     </div>
   );
