@@ -8,6 +8,7 @@ import type {
   SalePaginationInfo,
   OptimisticSaleItemAction,
 } from "@/types/sale";
+import { SALE_STATUS_LABELS } from "@/types/sale";
 import {
   createSale,
   addSaleItem,
@@ -468,7 +469,7 @@ export default function SalesManagementClient({
                                 : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {sale.status}
+                          {SALE_STATUS_LABELS[sale.status]}
                         </span>
                       </td>
                     </tr>
