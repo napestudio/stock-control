@@ -1,5 +1,12 @@
 import { Prisma, SaleStatus, PaymentMethod } from "@prisma/client";
 
+export const SALE_STATUS_LABELS: Record<SaleStatus, string> = {
+  PENDING: "Pendiente",
+  COMPLETED: "Completada",
+  CANCELED: "Cancelada",
+  REFUNDED: "Reembolsada",
+} as const;
+
 // Raw sale item from database
 type RawSaleItem = Prisma.SaleItemGetPayload<{
   include: {
