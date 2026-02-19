@@ -14,31 +14,43 @@ export const navigationItems: NavItem[] = [
   {
     path: "/panel/sales",
     label: "Ventas",
-    icon: "package",
+    icon: "shopping-bag",
     requiresAdmin: true,
   },
   {
     path: "/panel/products",
     label: "Productos",
-    icon: "package",
+    icon: "shirt",
     requiresAdmin: true,
   },
   {
     path: "/panel/stock",
     label: "Control de Stock",
-    icon: "package",
+    icon: "clipboard-list",
     requiresAdmin: true,
   },
   {
     path: "/panel/cash-registers",
     label: "Arqueo de Caja",
-    icon: "package",
+    icon: "banknotes",
     requiresAdmin: true,
   },
   {
     path: "/panel/customers",
     label: "Clientes",
     icon: "users",
+    requiresAdmin: true,
+  },
+  {
+    path: "/panel/reports",
+    label: "Reportes",
+    icon: "chart-bar",
+    requiresAdmin: true,
+  },
+  {
+    path: "/panel/statistics",
+    label: "Estadísticas",
+    icon: "arrow-trending-up",
     requiresAdmin: true,
   },
   {
