@@ -9,6 +9,7 @@ import type { VariantScanDetail } from "@/types/toolbar";
 
 export default function FloatingToolbar() {
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [autoSell, setAutoSell] = useState(false);
   const [showQuickSale, setShowQuickSale] = useState(false);
   const [scannedVariant, setScannedVariant] = useState<VariantScanDetail | null>(null);
 
@@ -22,12 +23,22 @@ export default function FloatingToolbar() {
     setScannedVariant(null);
   }
 
+  function openInspectScanner() {
+    setAutoSell(false);
+    setShowQrScanner(true);
+  }
+
+  function openFastSellScanner() {
+    setAutoSell(true);
+    setShowQrScanner(true);
+  }
+
   return (
     <>
       {/* Fixed action buttons */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         <button
-          onClick={() => setShowQrScanner(true)}
+          onClick={openInspectScanner}
           className="w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 active:scale-95 transition-transform flex items-center justify-center"
           title="Escanear QR"
           aria-label="Escanear código QR"
@@ -36,7 +47,7 @@ export default function FloatingToolbar() {
         </button>
 
         <button
-          onClick={() => setShowQuickSale(true)}
+          onClick={openFastSellScanner}
           className="w-14 h-14 rounded-full bg-green-600 text-white shadow-lg hover:bg-green-700 active:scale-95 transition-transform flex items-center justify-center"
           title="Venta rápida"
           aria-label="Venta rápida"
@@ -49,6 +60,7 @@ export default function FloatingToolbar() {
         isOpen={showQrScanner}
         onClose={() => setShowQrScanner(false)}
         onSell={handleSellFromScan}
+        autoSell={autoSell}
       />
 
       <QuickSaleDialog

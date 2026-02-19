@@ -13,6 +13,8 @@ interface QrScannerDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSell: (variant: VariantScanDetail) => void;
+  /** When true, skips the product detail card and calls onSell immediately after a successful scan. */
+  autoSell?: boolean;
 }
 
 const SCANNER_ELEMENT_ID = "qr-scanner-viewport";
@@ -21,11 +23,13 @@ export default function QrScannerDialog({
   isOpen,
   onClose,
   onSell,
+  autoSell = false,
 }: QrScannerDialogProps) {
   const router = useRouter();
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const hasScannedRef = useRef(false);
 
+  const [retryKey, setRetryKey] = useState(0);
   const [state, setState] = useState<ScanState>("scanning");
   const [variant, setVariant] = useState<VariantScanDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -41,6 +45,12 @@ export default function QrScannerDialog({
     // Delay to let the modal render the target div
     const timeout = setTimeout(async () => {
       try {
+        // Clear any leftover scanner from a previous attempt
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(() => {});
+          scannerRef.current = null;
+        }
+
         const { Html5QrcodeScanner } = await import("html5-qrcode");
 
         const scanner = new Html5QrcodeScanner(
@@ -80,6 +90,12 @@ export default function QrScannerDialog({
                 setState("error");
                 return;
               }
+              if (autoSell) {
+                // Fast-sell mode: skip the detail card and go straight to the sale dialog
+                onClose();
+                onSell(result);
+                return;
+              }
               setVariant(result);
               setState("found");
             } catch (err) {
@@ -96,6 +112,10 @@ export default function QrScannerDialog({
           },
         );
       } catch {
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(() => {});
+          scannerRef.current = null;
+        }
         setErrorMessage("No se pudo iniciar la cámara.");
         setState("error");
       }
@@ -103,8 +123,12 @@ export default function QrScannerDialog({
 
     return () => {
       clearTimeout(timeout);
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(() => {});
+        scannerRef.current = null;
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, retryKey]);
 
   async function handleClose() {
     if (scannerRef.current) {
@@ -124,10 +148,10 @@ export default function QrScannerDialog({
 
   function handleRetry() {
     hasScannedRef.current = false;
-    setState("scanning");
     setVariant(null);
     setErrorMessage("");
-    // Re-trigger the scanner by toggling state — easiest is to remount via key
+    setState("scanning");
+    setRetryKey((k) => k + 1);
   }
 
   function handleSell() {

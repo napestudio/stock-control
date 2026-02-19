@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { PaymentMethod } from "@prisma/client";
 import {
   getVariantBySkuForSale,
@@ -31,6 +31,7 @@ export default function QuickSaleDialog({
   initialVariant,
 }: QuickSaleDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [scanInput, setScanInput] = useState("");
   const [variant, setVariant] = useState<ProductVariantSearchResult | null>(
@@ -57,7 +58,32 @@ export default function QuickSaleDialog({
   const [isLooking, startLookup] = useTransition();
   const [isSelling, startSale] = useTransition();
 
+  // Sync variant state whenever initialVariant prop changes (e.g. second QR scan)
+  useEffect(() => {
+    if (initialVariant) {
+      setVariant({
+        id: initialVariant.id,
+        sku: initialVariant.sku,
+        displayName: initialVariant.displayName,
+        productName: initialVariant.productName,
+        price: initialVariant.price,
+        costPrice: initialVariant.costPrice,
+        stockQuantity: initialVariant.stockQuantity,
+      });
+      setQuantity(1);
+      setSaleError("");
+      setSuccessMessage("");
+      setLookupError("");
+    } else {
+      setVariant(null);
+    }
+  }, [initialVariant]);
+
   function handleClose() {
+    if (autoCloseRef.current) {
+      clearTimeout(autoCloseRef.current);
+      autoCloseRef.current = null;
+    }
     setScanInput("");
     setVariant(initialVariant
       ? {
@@ -135,7 +161,12 @@ export default function QuickSaleDialog({
         setQuantity(1);
         setPaymentMethod(PaymentMethod.CASH);
         setSaleError("");
-        setTimeout(() => inputRef.current?.focus(), 100);
+        if (initialVariant) {
+          // QR-initiated flow: auto-close so the user can scan the next product
+          autoCloseRef.current = setTimeout(() => handleClose(), 1500);
+        } else {
+          setTimeout(() => inputRef.current?.focus(), 100);
+        }
       } catch (err) {
         setSaleError(
           err instanceof Error ? err.message : "Error al completar la venta.",
