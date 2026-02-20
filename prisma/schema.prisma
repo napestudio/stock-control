@@ -336,7 +336,7 @@ model SaleItem {
   priceAtSale Decimal @db.Decimal(10, 2)
   costAtSale  Decimal @db.Decimal(10, 2)
 
-  sale           Sale            @relation(fields: [saleId], references: [id])
+  sale           Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
   variant        ProductVariant  @relation(fields: [productVariantId], references: [id])
   stockMovements StockMovement[]
 
@@ -354,7 +354,7 @@ model Payment {
   method PaymentMethod
   amount Decimal       @db.Decimal(10, 2)
 
-  sale Sale @relation(fields: [saleId], references: [id])
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
