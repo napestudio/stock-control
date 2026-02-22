@@ -83,7 +83,7 @@ export default function SaleItemsList({
                 {item.variant?.displayName || item.variant?.sku || ""}
               </p>
               <p className="text-sm font-medium text-gray-900 mt-1">
-                ${(item.variant?.price || 0).toFixed(2)} c/u
+                ${(item.variant?.price || 0).toLocaleString("es-Ar")} c/u
               </p>
             </div>
 
@@ -146,7 +146,10 @@ export default function SaleItemsList({
             {/* Subtotal */}
             <div className="text-right min-w-20">
               <p className="font-bold text-gray-900">
-                ${((item.variant?.price || 0) * item.quantity).toFixed(2)}
+                $
+                {((item.variant?.price || 0) * item.quantity).toLocaleString(
+                  "es-Ar",
+                )}
               </p>
             </div>
 
@@ -180,7 +183,7 @@ export default function SaleItemsList({
         <div className="flex justify-between items-center">
           <span className="text-lg font-medium text-gray-900">Subtotal:</span>
           <span className="text-2xl font-bold text-gray-900">
-            ${subtotal.toFixed(2)}
+            ${subtotal.toLocaleString("es-Ar")}
           </span>
         </div>
       </div>

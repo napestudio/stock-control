@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Sidebar from "@/components/ui/sidebar";
@@ -39,6 +39,14 @@ export default function SaleSidebar({
   isPending = false,
 }: SaleSidebarProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [pendingPayment, setPendingPayment] = useState<PaymentEntry | null>(null);
+
+  const handleCurrentChange = useCallback(
+    (method: PaymentEntry["method"], amount: number) => {
+      setPendingPayment({ method, amount });
+    },
+    [],
+  );
 
   const {
     register,
@@ -65,7 +73,14 @@ export default function SaleSidebar({
   }, 0);
 
   const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
-  const isPaymentComplete = Math.abs(total - paymentsTotal) < 0.01;
+
+  // Payment is complete if explicitly split payments cover the total,
+  // OR if no split has been started and the pending selection covers the total.
+  const isPaymentComplete =
+    (payments.length > 0 && Math.abs(total - paymentsTotal) < 0.01) ||
+    (payments.length === 0 &&
+      pendingPayment !== null &&
+      Math.abs(total - pendingPayment.amount) < 0.01);
 
   function onSubmit(customerData: CustomerInput) {
     if (items.length === 0) {
@@ -73,7 +88,7 @@ export default function SaleSidebar({
       return;
     }
 
-    if (payments.length === 0) {
+    if (payments.length === 0 && !pendingPayment) {
       alert("Debes agregar al menos un método de pago");
       return;
     }
@@ -85,9 +100,13 @@ export default function SaleSidebar({
       return;
     }
 
+    // For single payments, use the pending selection directly (skip "Dividir Pago")
+    const finalPayments =
+      payments.length === 0 && pendingPayment ? [pendingPayment] : payments;
+
     const completeSaleData: CompleteSaleInput = {
       saleId: sale.id,
-      payments,
+      payments: finalPayments,
       customerData,
       sessionId: sale.sessionId,
     };
@@ -129,6 +148,7 @@ export default function SaleSidebar({
               total={total}
               payments={payments}
               onPaymentsChange={setPayments}
+              onCurrentChange={handleCurrentChange}
               disabled={isPending}
             />
           </div>
@@ -146,12 +166,7 @@ export default function SaleSidebar({
           </Button>
           <Button
             type="submit"
-            disabled={
-              isPending ||
-              items.length === 0 ||
-              payments.length === 0 ||
-              !isPaymentComplete
-            }
+            disabled={isPending || items.length === 0 || !isPaymentComplete}
           >
             {isPending ? "Procesando..." : "Completar Venta"}
           </Button>

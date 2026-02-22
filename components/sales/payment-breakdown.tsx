@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PaymentMethod } from "@prisma/client";
 import type { PaymentEntry } from "@/lib/validations/sale-schema";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ interface PaymentBreakdownProps {
   total: number;
   payments: PaymentEntry[];
   onPaymentsChange: (payments: PaymentEntry[]) => void;
+  onCurrentChange?: (method: PaymentMethod, amount: number) => void;
   disabled?: boolean;
 }
 
@@ -24,16 +25,26 @@ export default function PaymentBreakdown({
   total,
   payments,
   onPaymentsChange,
+  onCurrentChange,
   disabled = false,
 }: PaymentBreakdownProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
     PaymentMethod.CASH,
   );
-  const [amount, setAmount] = useState<string>("");
+  // null means "use auto-fill (remaining)"; a string means user has manually typed a value
+  const [manualAmount, setManualAmount] = useState<string | null>(null);
 
   const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
   const remaining = total - paymentsTotal;
   const isComplete = Math.abs(remaining) < 0.01; // Allow 1 cent difference for rounding
+
+  const amount =
+    manualAmount ?? (remaining > 0.01 ? remaining.toFixed(2) : "");
+
+  // Notify parent of the current pending selection so it can enable submit
+  useEffect(() => {
+    onCurrentChange?.(selectedMethod, parseFloat(amount) || 0);
+  }, [selectedMethod, amount, onCurrentChange]);
 
   function handleAddPayment() {
     const numAmount = parseFloat(amount);
@@ -44,7 +55,7 @@ export default function PaymentBreakdown({
 
     if (numAmount > remaining + 0.01) {
       alert(
-        `El monto no puede exceder el restante (${remaining.toFixed(2)})`,
+        `El monto no puede exceder el restante (${remaining.toLocaleString("es-Ar")})`,
       );
       return;
     }
@@ -55,24 +66,12 @@ export default function PaymentBreakdown({
     };
 
     onPaymentsChange([...payments, newPayment]);
-    setAmount("");
+    setManualAmount(null); // Reset to auto-fill with new remaining
   }
 
   function handleRemovePayment(index: number) {
     const newPayments = payments.filter((_, i) => i !== index);
     onPaymentsChange(newPayments);
-  }
-
-  function handleQuickFill() {
-    if (remaining <= 0) return;
-
-    const newPayment: PaymentEntry = {
-      method: selectedMethod,
-      amount: remaining,
-    };
-
-    onPaymentsChange([...payments, newPayment]);
-    setAmount("");
   }
 
   function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -85,12 +84,9 @@ export default function PaymentBreakdown({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">
+        <h3 className="text-sm font-medium text-gray-900">
           Métodos de Pago
         </h3>
-        <p className="text-xs text-gray-500">
-          Puedes dividir el pago en múltiples métodos
-        </p>
       </div>
 
       {/* Payment summary */}
@@ -98,13 +94,13 @@ export default function PaymentBreakdown({
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700">Total:</span>
           <span className="text-lg font-bold text-gray-900">
-            ${total.toFixed(2)}
+            ${total.toLocaleString("es-Ar")}
           </span>
         </div>
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700">Pagado:</span>
           <span className="text-lg font-bold text-green-600">
-            ${paymentsTotal.toFixed(2)}
+            ${paymentsTotal.toLocaleString("es-Ar")}
           </span>
         </div>
         <div className="flex justify-between items-center pt-2 border-t border-blue-300">
@@ -118,7 +114,7 @@ export default function PaymentBreakdown({
                   : "text-yellow-600"
             }`}
           >
-            ${Math.abs(remaining).toFixed(2)}
+            ${Math.abs(remaining).toLocaleString("es-Ar")}
           </span>
         </div>
       </div>
@@ -126,7 +122,9 @@ export default function PaymentBreakdown({
       {/* Payment entries */}
       {payments.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">Pagos registrados:</p>
+          <p className="text-sm font-medium text-gray-700">
+            Pagos registrados:
+          </p>
           {payments.map((payment, index) => (
             <div
               key={index}
@@ -137,7 +135,7 @@ export default function PaymentBreakdown({
                   {PAYMENT_METHOD_LABELS[payment.method]}
                 </p>
                 <p className="text-sm text-gray-600">
-                  ${payment.amount.toFixed(2)}
+                  ${payment.amount.toLocaleString("es-Ar")}
                 </p>
               </div>
               <button
@@ -177,7 +175,9 @@ export default function PaymentBreakdown({
             <select
               id="payment-method"
               value={selectedMethod}
-              onChange={(e) => setSelectedMethod(e.target.value as PaymentMethod)}
+              onChange={(e) =>
+                setSelectedMethod(e.target.value as PaymentMethod)
+              }
               disabled={disabled}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
             >
@@ -196,29 +196,19 @@ export default function PaymentBreakdown({
             >
               Monto
             </label>
-            <div className="flex gap-2">
-              <input
-                id="payment-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={remaining}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={disabled}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
-                placeholder="0.00"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleQuickFill}
-                disabled={disabled || remaining <= 0}
-              >
-                Completar
-              </Button>
-            </div>
+            <input
+              id="payment-amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={remaining}
+              value={amount}
+              onChange={(e) => setManualAmount(e.target.value)}
+              onKeyUp={handleKeyPress}
+              disabled={disabled}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              placeholder="0.00"
+            />
           </div>
 
           <Button
@@ -227,7 +217,7 @@ export default function PaymentBreakdown({
             disabled={disabled || !amount || parseFloat(amount) <= 0}
             className="w-full"
           >
-            Agregar Pago
+            Dividir Pago
           </Button>
         </div>
       )}
