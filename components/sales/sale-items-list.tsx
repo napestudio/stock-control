@@ -102,6 +102,7 @@ export default function SaleItemsList({
                     autoFocus
                   />
                   <button
+                    type="button"
                     onClick={() => handleSaveEdit(item.id)}
                     className="text-green-600 hover:text-green-800 text-sm font-medium"
                     disabled={disabled}
@@ -109,6 +110,7 @@ export default function SaleItemsList({
                     ✓
                   </button>
                   <button
+                    type="button"
                     onClick={handleCancelEdit}
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"
                     disabled={disabled}
@@ -119,6 +121,7 @@ export default function SaleItemsList({
               ) : (
                 <>
                   <button
+                    type="button"
                     onClick={() => handleDecrement(item)}
                     disabled={disabled || item.quantity <= 1}
                     className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -126,6 +129,7 @@ export default function SaleItemsList({
                     -
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleStartEdit(item)}
                     className="w-12 h-8 flex items-center justify-center text-gray-900 font-medium hover:bg-white rounded"
                     disabled={disabled}
@@ -133,6 +137,7 @@ export default function SaleItemsList({
                     {item.quantity}
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleIncrement(item)}
                     disabled={disabled}
                     className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -155,6 +160,7 @@ export default function SaleItemsList({
 
             {/* Remove button */}
             <button
+              type="button"
               onClick={() => onRemove(item.id)}
               disabled={disabled}
               className="text-red-600 hover:text-red-800 p-2 disabled:opacity-50 disabled:cursor-not-allowed"

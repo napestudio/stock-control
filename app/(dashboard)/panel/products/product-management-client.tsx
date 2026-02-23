@@ -563,11 +563,11 @@ export default function ProductManagementClient({
                   disabled={pagination.page === 1 || isPending}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  Anterior
                 </button>
 
                 <span className="px-4 py-2 text-sm text-gray-700">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {pagination.page} de {pagination.totalPages}
                 </span>
 
                 <button
@@ -597,7 +597,7 @@ export default function ProductManagementClient({
                   disabled={!pagination.hasMore || isPending}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  Siguiente
                 </button>
               </div>
             </div>

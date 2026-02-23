@@ -13,7 +13,6 @@ import {
   createSale,
   addSaleItem,
   removeSaleItem,
-  updateSaleItemQuantity,
   completeSale,
   cancelSale,
 } from "@/app/actions/sale-actions";
@@ -35,9 +34,8 @@ export default function SalesManagementClient({
   initialSales,
   initialPagination,
 }: SalesManagementClientProps) {
-  const [pendingSales, setPendingSales] = useState<SaleWithRelations[]>(
-    initialPendingSales,
-  );
+  const [pendingSales, setPendingSales] =
+    useState<SaleWithRelations[]>(initialPendingSales);
   const [selectedSale, setSelectedSale] = useState<SaleWithRelations | null>(
     null,
   );
@@ -184,40 +182,20 @@ export default function SalesManagementClient({
     });
   }
 
-  // Update item quantity
-  async function handleUpdateQuantity(itemId: string, quantity: number) {
+  // Update item quantity — local state only, no DB call until completeSale
+  function handleUpdateQuantity(itemId: string, quantity: number) {
     if (!selectedSale) return;
 
-    startTransition(async () => {
-      addOptimisticItem({ type: "updateQuantity", itemId, quantity });
-      try {
-        const updatedItem = await updateSaleItemQuantity({
-          saleItemId: itemId,
-          quantity,
-        });
-
-        // Update selected sale
-        const updatedSale = {
-          ...selectedSale,
-          items: selectedSale.items.map((item) =>
-            item.id === itemId ? updatedItem : item,
-          ),
-        };
-        setSelectedSale(updatedSale);
-
-        // Also update in pendingSales array
-        setPendingSales((prev) =>
-          prev.map((s) => (s.id === selectedSale.id ? updatedSale : s)),
-        );
-      } catch (error) {
-        console.error("Error updating quantity:", error);
-        alert(
-          error instanceof Error
-            ? error.message
-            : "Error al actualizar cantidad",
-        );
-      }
-    });
+    const updatedSale = {
+      ...selectedSale,
+      items: selectedSale.items.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item,
+      ),
+    };
+    setSelectedSale(updatedSale);
+    setPendingSales((prev) =>
+      prev.map((s) => (s.id === selectedSale.id ? updatedSale : s)),
+    );
   }
 
   // Complete sale
@@ -226,7 +204,13 @@ export default function SalesManagementClient({
 
     startTransition(async () => {
       try {
-        const completedSale = await completeSale(data);
+        const completedSale = await completeSale({
+          ...data,
+          items: optimisticItems.map((item) => ({
+            saleItemId: item.id,
+            quantity: item.quantity,
+          })),
+        });
 
         // Add to completed sales list (prevent duplicates)
         setSales((prev) => {
@@ -305,11 +289,7 @@ export default function SalesManagementClient({
             {initialPagination.totalCount !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button
-          onClick={handleCreateSale}
-          disabled={isPending}
-          size="lg"
-        >
+        <Button onClick={handleCreateSale} disabled={isPending} size="lg">
           Nueva Venta
         </Button>
       </div>
@@ -368,7 +348,7 @@ export default function SalesManagementClient({
                             sum + (item.variant?.price || 0) * item.quantity,
                           0,
                         )
-                        .toFixed(2)}
+                        .toLocaleString("es-Ar")}
                     </span>
                   </div>
                 </div>

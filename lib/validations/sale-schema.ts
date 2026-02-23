@@ -116,6 +116,25 @@ export const completeSaleSchema = z
       .regex(UUID_REGEX, "ID de sesión inválido")
       .optional()
       .nullable(),
+    discountPercentage: z
+      .number()
+      .min(0, "El descuento no puede ser negativo")
+      .max(100, "El descuento no puede superar el 100%")
+      .multipleOf(0.01, "El descuento debe tener máximo 2 decimales")
+      .optional()
+      .default(0),
+    items: z
+      .array(
+        z.object({
+          saleItemId: z.string().regex(UUID_REGEX, "ID de ítem inválido"),
+          quantity: z
+            .number()
+            .int("La cantidad debe ser un número entero")
+            .min(1, "La cantidad mínima es 1")
+            .max(99999, "La cantidad no puede exceder 99,999"),
+        }),
+      )
+      .optional(),
   })
   .refine((data) => data.customerId || data.customerData, {
     message: "Debe proporcionar un cliente (ID o datos)",

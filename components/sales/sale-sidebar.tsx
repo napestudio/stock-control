@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Sidebar from "@/components/ui/sidebar";
@@ -39,14 +39,7 @@ export default function SaleSidebar({
   isPending = false,
 }: SaleSidebarProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
-  const [pendingPayment, setPendingPayment] = useState<PaymentEntry | null>(null);
-
-  const handleCurrentChange = useCallback(
-    (method: PaymentEntry["method"], amount: number) => {
-      setPendingPayment({ method, amount });
-    },
-    [],
-  );
+  const [discountPercentage, setDiscountPercentage] = useState(0);
 
   const {
     register,
@@ -67,29 +60,20 @@ export default function SaleSidebar({
   });
 
   // Calculate total
-  const total = items.reduce((sum, item) => {
+  const subtotal = items.reduce((sum, item) => {
     const price = item.variant?.price || 0;
     return sum + price * item.quantity;
   }, 0);
+  const discountAmount = subtotal * (discountPercentage / 100);
+  const total = subtotal - discountAmount;
 
   const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
-
-  // Payment is complete if explicitly split payments cover the total,
-  // OR if no split has been started and the pending selection covers the total.
   const isPaymentComplete =
-    (payments.length > 0 && Math.abs(total - paymentsTotal) < 0.01) ||
-    (payments.length === 0 &&
-      pendingPayment !== null &&
-      Math.abs(total - pendingPayment.amount) < 0.01);
+    payments.length > 0 && Math.abs(total - paymentsTotal) < 0.01;
 
   function onSubmit(customerData: CustomerInput) {
     if (items.length === 0) {
       alert("Debes agregar al menos un producto a la venta");
-      return;
-    }
-
-    if (payments.length === 0 && !pendingPayment) {
-      alert("Debes agregar al menos un método de pago");
       return;
     }
 
@@ -100,15 +84,12 @@ export default function SaleSidebar({
       return;
     }
 
-    // For single payments, use the pending selection directly (skip "Dividir Pago")
-    const finalPayments =
-      payments.length === 0 && pendingPayment ? [pendingPayment] : payments;
-
     const completeSaleData: CompleteSaleInput = {
       saleId: sale.id,
-      payments: finalPayments,
+      payments,
       customerData,
       sessionId: sale.sessionId,
+      discountPercentage,
     };
 
     onComplete(completeSaleData);
@@ -141,14 +122,59 @@ export default function SaleSidebar({
           />
         </div>
 
+        {/* Discount */}
+
+        {items.length > 0 && (
+          <div className="pb-6 border-b border-gray-200 flex flex-col items-start">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">
+              Descuento
+            </h3>
+            <div className="relative">
+              <input
+                id="discount"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={discountPercentage === 0 ? "" : discountPercentage}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setDiscountPercentage(
+                    isNaN(val) ? 0 : Math.min(100, Math.max(0, val)),
+                  );
+                }}
+                disabled={isPending}
+                placeholder="0"
+                className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                %
+              </span>
+            </div>
+            {discountPercentage > 0 && (
+              <div className="mt-3 space-y-1 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toLocaleString("es-Ar")}</span>
+                </div>
+                <div className="flex justify-between text-red-600">
+                  <span>Descuento ({discountPercentage}%):</span>
+                  <span>-${discountAmount.toLocaleString("es-Ar")}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-gray-900 border-t pt-1">
+                  <span>Total:</span>
+                  <span>${total.toLocaleString("es-Ar")}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {/* Payment Breakdown */}
         {items.length > 0 && (
           <div className="pb-6 border-b border-gray-200">
             <PaymentBreakdown
               total={total}
-              payments={payments}
               onPaymentsChange={setPayments}
-              onCurrentChange={handleCurrentChange}
               disabled={isPending}
             />
           </div>

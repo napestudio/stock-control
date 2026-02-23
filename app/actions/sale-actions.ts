@@ -647,6 +647,11 @@ export async function completeSale(
       throw new Error("La venta debe tener al menos un item");
     }
 
+    // Build a map of quantity overrides from the client (avoids DB round-trips on every +/-)
+    const itemQuantities = new Map(
+      (validated.items ?? []).map((i) => [i.saleItemId, i.quantity]),
+    );
+
     // 2. Handle customer (get or create)
     let customerId = validated.customerId;
 
@@ -673,14 +678,17 @@ export async function completeSale(
     let totalCost = 0;
 
     for (const item of sale.items) {
-      const itemSubtotal = Number(item.variant.price) * item.quantity;
-      const itemCost = Number(item.variant.costPrice) * item.quantity;
+      const qty = itemQuantities.get(item.id) ?? item.quantity;
+      const itemSubtotal = Number(item.variant.price) * qty;
+      const itemCost = Number(item.variant.costPrice) * qty;
 
       subtotal += itemSubtotal;
       totalCost += itemCost;
     }
 
-    const total = subtotal; // Can add tax/discount later
+    const discountPercentage = validated.discountPercentage ?? 0;
+    const discount = subtotal * (discountPercentage / 100);
+    const total = subtotal - discount;
 
     // 4. Validate payment amounts sum equals total
     const paymentsTotal = validated.payments.reduce(
@@ -698,15 +706,16 @@ export async function completeSale(
     // 5. For each item: Check stock, create movement, update stock
     for (const item of sale.items) {
       const variant = item.variant;
+      const finalQty = itemQuantities.get(item.id) ?? item.quantity;
 
       // Check stock availability (authoritative check)
       if (!variant.stock) {
         throw new Error(`Stock no encontrado para ${variant.sku}`);
       }
 
-      if (variant.stock.quantity < item.quantity) {
+      if (variant.stock.quantity < finalQty) {
         throw new Error(
-          `Stock insuficiente para ${variant.sku}. Disponible: ${variant.stock.quantity}, Requerido: ${item.quantity}`,
+          `Stock insuficiente para ${variant.sku}. Disponible: ${variant.stock.quantity}, Requerido: ${finalQty}`,
         );
       }
 
@@ -715,7 +724,7 @@ export async function completeSale(
         data: {
           productVariantId: item.productVariantId,
           type: StockMovementType.OUT,
-          quantity: item.quantity,
+          quantity: finalQty,
           reason: `Venta #${sale.id.slice(0, 8)}`,
           saleItemId: item.id,
         },
@@ -726,15 +735,16 @@ export async function completeSale(
         where: { productVariantId: item.productVariantId },
         data: {
           quantity: {
-            decrement: item.quantity,
+            decrement: finalQty,
           },
         },
       });
 
-      // Update sale item with prices at sale
+      // Update sale item with final quantity and prices at sale
       await tx.saleItem.update({
         where: { id: item.id },
         data: {
+          quantity: finalQty,
           priceAtSale: item.variant.price,
           costAtSale: item.variant.costPrice,
         },
@@ -798,7 +808,7 @@ export async function completeSale(
         total,
         totalCost,
         tax: 0,
-        discount: 0,
+        discount,
       },
       include: {
         items: {
