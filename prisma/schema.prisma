@@ -50,6 +50,16 @@ enum CashSessionStatus {
   ARCHIVED // For historical data migration
 }
 
+enum PrinterConnectionType {
+  TCP_IP
+  USB_SERIAL
+}
+
+enum PaperWidth {
+  MM80
+  MM58
+}
+
 // ======================================
 // AUTH & RBAC
 // ======================================
@@ -372,6 +382,29 @@ model CashRegister {
   active Boolean @default(true)
 
   sessions CashSession[]
+  printers Printer[]
+}
+
+model Printer {
+  id                String                @id @default(uuid())
+  name              String
+  description       String?
+  model             String?
+  connectionType    PrinterConnectionType
+  ipAddress         String?               // TCP_IP only
+  systemPrinterName String?               // USB_SERIAL only (exact Windows printer name)
+  paperWidth        PaperWidth            @default(MM80)
+  autoPrint         Boolean               @default(false)
+  active            Boolean               @default(true)
+  cashRegisterId    String?               // optional — some businesses have no printer
+  cashRegister      CashRegister?         @relation(fields: [cashRegisterId], references: [id])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  deletedAt         DateTime?
+
+  @@index([cashRegisterId])
+  @@index([active])
+  @@index([deletedAt])
 }
 
 model CashSession {

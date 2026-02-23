@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import CustomerFormSidebar from "@/components/customers/customer-form-sidebar";
+import TrashIcon from "@/components/icons/TrashIcon";
+import PencilIcon from "@/components/icons/PencilIcon";
 import {
   createCustomer,
   updateCustomer,
@@ -97,14 +99,32 @@ export default function CustomersClient({
       </div>
 
       {customers.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <p className="text-muted-foreground mb-4">
-            Todavía no hay clientes registrados. Agregá el primero.
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No hay clientes registrados
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Comenzá agregando el primer cliente.
           </p>
-          <Button onClick={openCreate}>Agregar Cliente</Button>
+          <div className="mt-4">
+            <Button onClick={openCreate}>Agregar Cliente</Button>
+          </div>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -133,7 +153,11 @@ export default function CustomersClient({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
+                <tr
+                  key={customer.id}
+                  onClick={() => openEdit(customer)}
+                  className="hover:bg-gray-50 cursor-pointer"
+                >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {customer.firstName} {customer.lastName}
                   </td>
@@ -152,24 +176,27 @@ export default function CustomersClient({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {customer._count?.sales ?? 0}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <button
                         onClick={() => openEdit(customer)}
+                        className="text-indigo-600 hover:text-indigo-900 disabled:opacity-40"
+                        title="Editar cliente"
                         disabled={isPending}
                       >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                      <button
                         onClick={() => handleDelete(customer)}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-40"
+                        title="Eliminar cliente"
                         disabled={isPending}
                       >
-                        Eliminar
-                      </Button>
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

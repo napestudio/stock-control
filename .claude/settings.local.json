@@ -9,7 +9,9 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx tsc:*)",
       "Bash($env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(pnpm tsc:*)"
     ]
   }
 }
