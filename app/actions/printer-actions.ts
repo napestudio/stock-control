@@ -68,7 +68,7 @@ export async function createPrinter(
     include: { cashRegister: { select: cashRegisterSelect } },
   });
 
-  revalidatePath("/panel/printers");
+  revalidatePath("/panel/configuration/printers");
 
   return {
     success: true,
@@ -110,7 +110,7 @@ export async function updatePrinter(
     include: { cashRegister: { select: cashRegisterSelect } },
   });
 
-  revalidatePath("/panel/printers");
+  revalidatePath("/panel/configuration/printers");
 
   return {
     success: true,
@@ -139,7 +139,7 @@ export async function deletePrinter(
     data: { deletedAt: new Date() },
   });
 
-  revalidatePath("/panel/printers");
+  revalidatePath("/panel/configuration/printers");
 
   return { success: true };
 }
