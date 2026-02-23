@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/product-actions";
 import CategorySidebar from "@/components/products/category-sidebar";
 import DeleteConfirmationModal from "@/components/products/delete-confirmation-modal";
+import ImportCSVSidebar from "@/components/products/import-csv-sidebar";
 import ProductDetailModal from "@/components/products/product-detail-modal";
 import ProductForm from "@/components/products/product-form";
 import ProductTable from "@/components/products/product-table";
@@ -89,6 +90,9 @@ export default function ProductManagementClient({
   // Category sidebar state
   const [categorySidebarOpen, setCategorySidebarOpen] = useState(false);
   const [categoryError, setCategoryError] = useState("");
+
+  // Import CSV sidebar state
+  const [importSidebarOpen, setImportSidebarOpen] = useState(false);
 
   // Error states - separate for page and modal
   const [pageError, setPageError] = useState("");
@@ -348,6 +352,11 @@ export default function ProductManagementClient({
     setDeleteModalOpen(true);
   }
 
+  // Handle CSV import completion
+  async function handleImportComplete() {
+    await refreshProducts();
+  }
+
   // Filter products for display
   const filteredProducts = optimisticProducts.filter((product) => {
     if (filter === "active") {
@@ -452,6 +461,27 @@ export default function ProductManagementClient({
               />
             </svg>
             Nueva Categoría
+          </button>
+
+          {/* Import CSV button */}
+          <button
+            onClick={() => setImportSidebarOpen(true)}
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            Importar CSV
           </button>
 
           {/* New product button */}
@@ -668,6 +698,14 @@ export default function ProductManagementClient({
           }}
           isPending={isPending}
           error={categoryError}
+        />
+      )}
+
+      {/* Import CSV sidebar */}
+      {importSidebarOpen && (
+        <ImportCSVSidebar
+          onClose={() => setImportSidebarOpen(false)}
+          onImportComplete={handleImportComplete}
         />
       )}
     </div>
