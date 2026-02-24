@@ -20,7 +20,7 @@ export default async function ProductsPage() {
   ]);
 
   return (
-    <div>
+    <div className="flex-1 min-h-0 flex flex-col">
       <DashboardHeader
         title="Gestión de Productos"
         subtitle="Gestiona productos, variantes e inventario"
