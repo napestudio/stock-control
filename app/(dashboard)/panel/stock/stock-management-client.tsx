@@ -264,9 +264,9 @@ export default function StockManagementClient({
   }
 
   return (
-    <div className="p-6">
+    <div className="flex-1 min-h-0 flex flex-col">
       {/* Filters Section */}
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-white rounded-lg shadow p-4 shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -320,7 +320,7 @@ export default function StockManagementClient({
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+        <div className="mb-4 shrink-0 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
           <span className="block sm:inline">{error}</span>
           <button
             onClick={() => setError("")}
@@ -332,7 +332,7 @@ export default function StockManagementClient({
       )}
 
       {/* Main Content */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow flex flex-col flex-1 min-h-0">
         {optimisticStock.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <p className="text-lg mb-2">No se encontraron productos</p>
@@ -342,25 +342,27 @@ export default function StockManagementClient({
           </div>
         ) : (
           <>
-            <StockTable
-              stockList={optimisticStock}
-              onAdjustStock={(stock) => {
-                setSelectedStock(stock);
-                setAdjustSidebarOpen(true);
-              }}
-              onUpdateMinimum={(stock) => {
-                setSelectedStock(stock);
-                setMinimumSidebarOpen(true);
-              }}
-              onViewMovements={(stock) => {
-                setSelectedStock(stock);
-                setMovementSidebarOpen(true);
-              }}
-            />
+            <div className="table-scroll flex-1 overflow-y-scroll overflow-x-hidden min-h-0">
+              <StockTable
+                stockList={optimisticStock}
+                onAdjustStock={(stock) => {
+                  setSelectedStock(stock);
+                  setAdjustSidebarOpen(true);
+                }}
+                onUpdateMinimum={(stock) => {
+                  setSelectedStock(stock);
+                  setMinimumSidebarOpen(true);
+                }}
+                onViewMovements={(stock) => {
+                  setSelectedStock(stock);
+                  setMovementSidebarOpen(true);
+                }}
+              />
+            </div>
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+              <div className="shrink-0 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <div className="text-sm text-gray-700">
                   Mostrando página {pagination.page} de {pagination.totalPages}{" "}
                   ({pagination.totalCount} productos)

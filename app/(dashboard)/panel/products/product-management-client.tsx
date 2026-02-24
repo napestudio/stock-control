@@ -368,10 +368,10 @@ export default function ProductManagementClient({
   });
 
   return (
-    <div className="mt-8">
+    <div className="flex-1 min-h-0 flex flex-col">
       {/* Page-level error display */}
       {pageError && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="mb-4 shrink-0 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {pageError}
           <button
             onClick={() => setPageError("")}
@@ -383,72 +383,23 @@ export default function ProductManagementClient({
       )}
 
       {/* Filters and search */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex flex-wrap gap-2">
-          {/* Status filter tabs */}
-          <button
-            onClick={() => handleFilterChange("all")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              filter === "all"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => handleFilterChange("active")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              filter === "active"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            Activos
-          </button>
-          <button
-            onClick={() => handleFilterChange("inactive")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              filter === "inactive"
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-            }`}
-          >
-            Inactivos
-          </button>
-
-          {/* Category filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => handleCategoryFilterChange(e.target.value)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            <option value="">Todas las Categorías</option>
-            {localCategories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          {/* Search */}
+      <div className="mb-6 bg-white rounded-lg shadow p-4 shrink-0">
+        {/* Row 1: Search + action buttons */}
+        <div className="flex flex-wrap gap-2 mb-3">
           <input
             type="text"
             placeholder="Buscar productos o SKU..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 flex-1 sm:w-64"
+            className="flex-1 min-w-48 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
 
-          {/* New category button */}
           <button
             onClick={() => setCategorySidebarOpen(true)}
-            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+            className="px-3 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
           >
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -463,13 +414,12 @@ export default function ProductManagementClient({
             Nueva Categoría
           </button>
 
-          {/* Import CSV button */}
           <button
             onClick={() => setImportSidebarOpen(true)}
-            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap"
+            className="px-3 py-2 bg-white text-gray-700 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap"
           >
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -484,13 +434,12 @@ export default function ProductManagementClient({
             Importar CSV
           </button>
 
-          {/* New product button */}
           <button
             onClick={() => setCreateModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 whitespace-nowrap"
+            className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center gap-1.5 whitespace-nowrap"
           >
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -505,27 +454,77 @@ export default function ProductManagementClient({
             Nuevo Producto
           </button>
         </div>
+
+        {/* Row 2: Status filters + category */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleFilterChange("all")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "all"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => handleFilterChange("active")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "active"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Activos
+          </button>
+          <button
+            onClick={() => handleFilterChange("inactive")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "inactive"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Inactivos
+          </button>
+
+          <select
+            value={categoryFilter}
+            onChange={(e) => handleCategoryFilterChange(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Todas las categorías</option>
+            {localCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Products table */}
-      {isPending && products.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <p className="mt-2 text-sm text-gray-500">Cargando productos...</p>
-        </div>
-      ) : (
-        <>
-          <ProductTable
-            products={filteredProducts}
-            onView={handleViewProduct}
-            onEdit={handleEditProduct}
-            onDelete={handleDeleteClick}
-            isPending={isPending}
-          />
+      <div className="flex-1 min-h-0 flex flex-col">
+        {isPending && products.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="mt-2 text-sm text-gray-500">Cargando productos...</p>
+          </div>
+        ) : (
+          <>
+            <div className="table-scroll flex-1 overflow-y-scroll overflow-x-hidden min-h-0">
+              <ProductTable
+                products={filteredProducts}
+                onView={handleViewProduct}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteClick}
+                isPending={isPending}
+              />
+            </div>
 
-          {/* Pagination controls */}
-          {pagination.totalCount > 0 && (
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
+            {/* Pagination controls */}
+            {pagination.totalCount > 0 && (
+              <div className="shrink-0 flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200 rounded-b-lg shadow">
               <div className="text-sm text-gray-700">
                 Mostrando{" "}
                 {Math.min(
@@ -602,8 +601,9 @@ export default function ProductManagementClient({
               </div>
             </div>
           )}
-        </>
-      )}
+          </>
+        )}
+      </div>
 
       {createModalOpen && (
         <Sidebar
