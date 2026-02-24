@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { navigationItems } from "@/lib/config/navigation";
+import type { NavEntry, NavGroup } from "@/lib/config/navigation";
 import { isAdmin } from "@/lib/utils/auth-helpers";
 import NavIcon from "./nav-icon";
 import type { Session } from "next-auth";
@@ -15,6 +16,10 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
+function isNavGroup(item: NavEntry): item is NavGroup {
+  return "children" in item;
+}
+
 export default function Sidebar({
   session,
   isMobileOpen,
@@ -22,6 +27,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [dropupOpen, setDropupOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +42,28 @@ export default function Sidebar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Derive effective open groups during render: manually opened OR has an active child path
+  const effectiveOpenGroups = new Set(openGroups);
+  for (const item of navigationItems) {
+    if (isNavGroup(item)) {
+      if (item.children.some((child) => pathname.startsWith(child.path))) {
+        effectiveOpenGroups.add(item.label);
+      }
+    }
+  }
+
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  }
 
   // Filter navigation items based on user role
   const visibleItems = navigationItems.filter((item) => {
@@ -83,35 +111,116 @@ export default function Sidebar({
 
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-2">
-            {visibleItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  href={item.path}
-                  onClick={onMobileClose}
-                  className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg
-                    transition-colors duration-200
-                    ${
-                      isActive(item.path)
-                        ? "bg-indigo-600 text-white"
-                        : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
-                    }
-                  `}
-                >
-                  <NavIcon
-                    name={item.icon}
-                    className={
-                      isActive(item.path) ? "text-white" : "text-gray-500"
-                    }
-                  />
-                  <span className="font-medium">{item.label}</span>
-                  {item.path === "/panel/change-password" &&
-                    session.user.requirePasswordChange && (
-                      <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
+            {visibleItems.map((item) => {
+              if (isNavGroup(item)) {
+                const isOpen = effectiveOpenGroups.has(item.label);
+                const hasActiveChild = item.children.some((child) =>
+                  isActive(child.path)
+                );
+                return (
+                  <li key={item.label}>
+                    <button
+                      onClick={() => toggleGroup(item.label)}
+                      className={`
+                        flex items-center gap-3 px-4 py-3 rounded-lg w-full
+                        transition-colors duration-200
+                        ${
+                          hasActiveChild
+                            ? "text-indigo-600 bg-indigo-50"
+                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                        }
+                      `}
+                    >
+                      <NavIcon
+                        name={item.icon}
+                        className={
+                          hasActiveChild ? "text-indigo-600" : "text-gray-500"
+                        }
+                      />
+                      <span className="font-medium">{item.label}</span>
+                      <svg
+                        className={`w-4 h-4 ml-auto shrink-0 transition-transform duration-200 ${
+                          isOpen ? "rotate-180" : ""
+                        } ${hasActiveChild ? "text-indigo-600" : "text-gray-400"}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    {isOpen && (
+                      <ul className="mt-1 space-y-1 ml-4">
+                        {item.children.map((child) => (
+                          <li key={child.path}>
+                            <Link
+                              href={child.path}
+                              onClick={onMobileClose}
+                              className={`
+                                flex items-center gap-3 px-4 py-2 rounded-lg
+                                transition-colors duration-200
+                                ${
+                                  isActive(child.path)
+                                    ? "bg-indigo-600 text-white"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                                }
+                              `}
+                            >
+                              <NavIcon
+                                name={child.icon}
+                                className={
+                                  isActive(child.path)
+                                    ? "text-white"
+                                    : "text-gray-500"
+                                }
+                              />
+                              <span className="text-sm font-medium">
+                                {child.label}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                </Link>
-              </li>
-            ))}
+                  </li>
+                );
+              }
+
+              return (
+                <li key={item.path}>
+                  <Link
+                    href={item.path}
+                    onClick={onMobileClose}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-lg
+                      transition-colors duration-200
+                      ${
+                        isActive(item.path)
+                          ? "bg-indigo-600 text-white"
+                          : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      }
+                    `}
+                  >
+                    <NavIcon
+                      name={item.icon}
+                      className={
+                        isActive(item.path) ? "text-white" : "text-gray-500"
+                      }
+                    />
+                    <span className="font-medium">{item.label}</span>
+                    {item.path === "/panel/change-password" &&
+                      session.user.requirePasswordChange && (
+                        <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
+                      )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
