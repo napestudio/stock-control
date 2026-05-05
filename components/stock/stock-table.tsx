@@ -2,18 +2,18 @@
 
 import type { StockWithVariantSerialized } from "@/types/stock";
 import Badge from "@/components/ui/badge";
+import AdjustmentsIcon from "@/components/icons/AdjustmentsIcon";
+import ClockIcon from "@/components/icons/ClockIcon";
 
 interface StockTableProps {
   stockList: StockWithVariantSerialized[];
   onAdjustStock: (stock: StockWithVariantSerialized) => void;
-  onUpdateMinimum: (stock: StockWithVariantSerialized) => void;
   onViewMovements: (stock: StockWithVariantSerialized) => void;
 }
 
 export default function StockTable({
   stockList,
   onAdjustStock,
-  onUpdateMinimum,
   onViewMovements,
 }: StockTableProps) {
   return (
@@ -79,24 +79,20 @@ export default function StockTable({
                   <Badge variant="success">OK</Badge>
                 )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+              <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                 <button
                   onClick={() => onAdjustStock(stock)}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  title="Ajustar stock"
+                  className="inline-flex items-center justify-center p-1.5 rounded text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
                 >
-                  Ajustar
-                </button>
-                <button
-                  onClick={() => onUpdateMinimum(stock)}
-                  className="text-purple-600 hover:text-purple-800 font-medium"
-                >
-                  Mínimo
+                  <AdjustmentsIcon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => onViewMovements(stock)}
-                  className="text-gray-600 hover:text-gray-800 font-medium"
+                  title="Ver historial"
+                  className="inline-flex items-center justify-center p-1.5 rounded text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
                 >
-                  Historial
+                  <ClockIcon className="w-5 h-5" />
                 </button>
               </td>
             </tr>
