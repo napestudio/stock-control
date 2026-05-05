@@ -12,9 +12,9 @@ import {
   updateMinimumStock,
   getStockList,
 } from "@/app/actions/stock-actions";
+import type { StockAdjustmentInput } from "@/lib/validations/stock-schema";
 import StockTable from "@/components/stock/stock-table";
 import StockAdjustmentSidebar from "@/components/stock/stock-adjustment-sidebar";
-import MinimumStockSidebar from "@/components/stock/minimum-stock-sidebar";
 import StockMovementSidebar from "@/components/stock/stock-movement-sidebar";
 
 interface StockManagementClientProps {
@@ -70,7 +70,6 @@ export default function StockManagementClient({
 
   // Sidebar states
   const [adjustSidebarOpen, setAdjustSidebarOpen] = useState(false);
-  const [minimumSidebarOpen, setMinimumSidebarOpen] = useState(false);
   const [movementSidebarOpen, setMovementSidebarOpen] = useState(false);
   const [selectedStock, setSelectedStock] =
     useState<StockWithVariantSerialized | null>(null);
@@ -96,18 +95,15 @@ export default function StockManagementClient({
     }
   }
 
-  // Handle stock adjustment
-  async function handleAdjustStock(data: {
-    productVariantId: string;
-    type: "IN" | "OUT" | "ADJUSTMENT" | "RETURN";
-    quantity: number;
-    reason?: string;
-  }) {
+  // Handle stock adjustment (and optionally minimum stock update)
+  async function handleAdjustStock(
+    data: StockAdjustmentInput,
+    minimumStock: number,
+  ) {
     startTransition(async () => {
       try {
         setError("");
 
-        // Optimistic update
         const currentStock = stockList.find(
           (s) => s.productVariantId === data.productVariantId,
         );
@@ -115,7 +111,6 @@ export default function StockManagementClient({
           let newQuantity = currentStock.quantity;
           switch (data.type) {
             case "IN":
-            case "RETURN":
               newQuantity += data.quantity;
               break;
             case "OUT":
@@ -130,43 +125,32 @@ export default function StockManagementClient({
             variantId: data.productVariantId,
             newQuantity,
           });
+
+          if (minimumStock !== currentStock.minimumStock) {
+            addOptimisticUpdate({
+              type: "updateMinimum",
+              variantId: data.productVariantId,
+              newMinimum: minimumStock,
+            });
+          }
         }
 
         await adjustStock(data);
+        if (
+          currentStock &&
+          minimumStock !== currentStock.minimumStock
+        ) {
+          await updateMinimumStock({
+            productVariantId: data.productVariantId,
+            minimumStock,
+          });
+        }
+
         await refreshStock();
         setAdjustSidebarOpen(false);
         setSelectedStock(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al ajustar stock");
-      }
-    });
-  }
-
-  // Handle minimum stock update
-  async function handleUpdateMinimum(data: {
-    productVariantId: string;
-    minimumStock: number;
-  }) {
-    startTransition(async () => {
-      try {
-        setError("");
-
-        addOptimisticUpdate({
-          type: "updateMinimum",
-          variantId: data.productVariantId,
-          newMinimum: data.minimumStock,
-        });
-
-        await updateMinimumStock(data);
-        await refreshStock();
-        setMinimumSidebarOpen(false);
-        setSelectedStock(null);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Error al actualizar stock mínimo",
-        );
       }
     });
   }
@@ -349,10 +333,6 @@ export default function StockManagementClient({
                   setSelectedStock(stock);
                   setAdjustSidebarOpen(true);
                 }}
-                onUpdateMinimum={(stock) => {
-                  setSelectedStock(stock);
-                  setMinimumSidebarOpen(true);
-                }}
                 onViewMovements={(stock) => {
                   setSelectedStock(stock);
                   setMovementSidebarOpen(true);
@@ -396,18 +376,6 @@ export default function StockManagementClient({
           onSubmit={handleAdjustStock}
           onClose={() => {
             setAdjustSidebarOpen(false);
-            setSelectedStock(null);
-          }}
-          isPending={isPending}
-        />
-      )}
-
-      {minimumSidebarOpen && selectedStock && (
-        <MinimumStockSidebar
-          stock={selectedStock}
-          onSubmit={handleUpdateMinimum}
-          onClose={() => {
-            setMinimumSidebarOpen(false);
             setSelectedStock(null);
           }}
           isPending={isPending}
