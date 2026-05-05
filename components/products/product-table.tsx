@@ -71,7 +71,7 @@ export default function ProductTable({
 
   return (
     <div
-      className={`bg-white shadow rounded-lg overflow-hidden ${
+      className={`bg-white shadow rounded-lg overflow-x-auto ${
         isPending ? "opacity-60" : ""
       }`}
     >

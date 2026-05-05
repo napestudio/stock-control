@@ -50,7 +50,7 @@ export async function createUser(data: CreateUserInput) {
     },
   });
 
-  revalidatePath("/panel/users");
+  revalidatePath("/panel/configuration/users");
 
   return {
     success: true,
@@ -89,7 +89,7 @@ export async function updateUser(id: string, data: Partial<EditUserInput>) {
     },
   });
 
-  revalidatePath("/panel/users");
+  revalidatePath("/panel/configuration/users");
 
   return {
     success: true,
@@ -120,7 +120,7 @@ export async function resetUserPassword(userId: string) {
     },
   });
 
-  revalidatePath("/panel/users");
+  revalidatePath("/panel/configuration/users");
 
   return {
     success: true,
@@ -154,7 +154,7 @@ export async function softDeleteUser(userId: string) {
     },
   });
 
-  revalidatePath("/panel/users");
+  revalidatePath("/panel/configuration/users");
 
   return {
     success: true,

@@ -18,14 +18,14 @@ export default function DashboardLayoutWrapper({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-svh flex bg-gray-50">
+    <div className="h-svh flex bg-gray-50 overflow-hidden">
       <Sidebar
         session={session}
         isMobileOpen={isMobileOpen}
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <div className="w-full py-6 lg:ml-96">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden lg:ml-72">
         {/* Mobile menu button */}
         <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center px-4">
           <button
@@ -39,7 +39,7 @@ export default function DashboardLayoutWrapper({
         </div>
 
         {/* Main content */}
-        <main className="pt-16 lg:pt-0 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 min-h-0 flex flex-col overflow-y-auto pt-16 lg:pt-0 p-4 lg:p-8">{children}</main>
 
         <FloatingToolbar />
       </div>

@@ -1,7 +1,10 @@
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/utils/auth-helpers";
 import { getDashboardData } from "@/app/actions/dashboard-actions";
-import type { RecentSaleItem, ActiveSessionSummary } from "@/app/actions/dashboard-actions";
+import type {
+  RecentSaleItem,
+  ActiveSessionSummary,
+} from "@/app/actions/dashboard-actions";
 import DashboardHeader from "@/components/dashboard-header";
 import Link from "next/link";
 import { SaleStatus } from "@prisma/client";
@@ -46,26 +49,23 @@ const STATUS_BADGE_CLASSES: Record<SaleStatus, string> = {
 function QuickActions({ isAdminUser }: { isAdminUser: boolean }) {
   const actions = [
     {
-      href: "/panel/sales/quick",
-      label: "Venta Rápida",
-      description: "Escanear y cobrar",
-      primary: true,
-      icon: (
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
-    },
-    {
       href: "/panel/sales",
       label: "Ventas",
       description: "Historial de ventas",
       primary: false,
       icon: (
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        <svg
+          className="h-6 w-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+          />
         </svg>
       ),
     },
@@ -75,9 +75,18 @@ function QuickActions({ isAdminUser }: { isAdminUser: boolean }) {
       description: "Gestión de productos",
       primary: false,
       icon: (
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        <svg
+          className="h-6 w-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+          />
         </svg>
       ),
     },
@@ -88,9 +97,18 @@ function QuickActions({ isAdminUser }: { isAdminUser: boolean }) {
       primary: false,
       adminOnly: true,
       icon: (
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <svg
+          className="h-6 w-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
         </svg>
       ),
     },
@@ -103,12 +121,10 @@ function QuickActions({ isAdminUser }: { isAdminUser: boolean }) {
     icon: React.ReactNode;
   }[];
 
-  const visibleActions = actions.filter(
-    (a) => !a.adminOnly || isAdminUser,
-  );
+  const visibleActions = actions.filter((a) => !a.adminOnly || isAdminUser);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
       {visibleActions.map((action) => (
         <Link
           key={action.href}
@@ -122,8 +138,12 @@ function QuickActions({ isAdminUser }: { isAdminUser: boolean }) {
           <span className={action.primary ? "text-white" : "text-gray-500"}>
             {action.icon}
           </span>
-          <span className="text-sm font-semibold leading-tight">{action.label}</span>
-          <span className={`text-xs leading-tight ${action.primary ? "text-indigo-100" : "text-gray-400"}`}>
+          <span className="text-sm font-semibold leading-tight">
+            {action.label}
+          </span>
+          <span
+            className={`text-xs leading-tight ${action.primary ? "text-indigo-100" : "text-gray-400"}`}
+          >
             {action.description}
           </span>
         </Link>
@@ -137,9 +157,18 @@ function CashSessionCard({ session }: { session: ActiveSessionSummary }) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-gray-500">
-          <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          <svg
+            className="h-5 w-5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            />
           </svg>
           <span className="text-sm font-medium">Caja</span>
         </div>
@@ -158,9 +187,18 @@ function CashSessionCard({ session }: { session: ActiveSessionSummary }) {
     <div className="bg-white rounded-xl border border-green-200 p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-green-700">
-          <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          <svg
+            className="h-5 w-5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            />
           </svg>
           <span className="text-sm font-medium">{session.registerName}</span>
         </div>
@@ -182,20 +220,37 @@ function CashSessionCard({ session }: { session: ActiveSessionSummary }) {
   );
 }
 
-function LowStockCard({ count, isAdminUser }: { count: number; isAdminUser: boolean }) {
+function LowStockCard({
+  count,
+  isAdminUser,
+}: {
+  count: number;
+  isAdminUser: boolean;
+}) {
   if (!isAdminUser) return null;
 
   if (count === 0) {
     return (
       <div className="bg-white rounded-xl border border-green-200 p-5 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-green-700">
-          <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="h-5 w-5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           <span className="text-sm font-medium">Stock</span>
         </div>
-        <p className="text-sm text-gray-500">Todos los productos en niveles normales</p>
+        <p className="text-sm text-gray-500">
+          Todos los productos en niveles normales
+        </p>
       </div>
     );
   }
@@ -203,22 +258,44 @@ function LowStockCard({ count, isAdminUser }: { count: number; isAdminUser: bool
   return (
     <div className="bg-red-50 rounded-xl border border-red-200 p-5 flex flex-col gap-3">
       <div className="flex items-center gap-2 text-red-700">
-        <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <svg
+          className="h-5 w-5 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
-        <span className="text-sm font-medium text-red-800">Alerta de Stock Bajo</span>
+        <span className="text-sm font-medium text-red-800">
+          Alerta de Stock Bajo
+        </span>
       </div>
       <p className="text-sm text-red-700">
-        {count} {count === 1 ? "producto tiene" : "productos tienen"} stock por debajo del mínimo.
+        {count} {count === 1 ? "producto tiene" : "productos tienen"} stock por
+        debajo del mínimo.
       </p>
       <Link
         href="/panel/stock?lowStockOnly=true"
         className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:text-red-800"
       >
         Ver productos
-        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <svg
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
         </svg>
       </Link>
     </div>
@@ -278,10 +355,10 @@ export default async function DashboardPage() {
   const session = await auth();
   const adminUser = isAdmin(session);
 
-  const { lowStockCount, recentSales, activeSession } = await getDashboardData();
+  const { lowStockCount, recentSales, activeSession } =
+    await getDashboardData();
 
-  const userName =
-    session?.user?.name || session?.user?.email || "Usuario";
+  const userName = session?.user?.name || session?.user?.email || "Usuario";
 
   return (
     <div>

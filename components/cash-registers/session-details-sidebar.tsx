@@ -50,6 +50,7 @@ export default function SessionDetailsSidebar({
     register: registerClose,
     handleSubmit: handleSubmitClose,
     control: controlClose,
+    reset: resetClose,
     formState: { errors: closeErrors },
   } = useForm<CloseSessionInput>({
     resolver: zodResolver(closeSessionSchema),
@@ -97,6 +98,32 @@ export default function SessionDetailsSidebar({
     loadSession();
   }, [sessionId]);
 
+  // Pre-fill closing amounts with expected values when summary loads
+  useEffect(() => {
+    if (!closingSummary) return;
+    resetClose({
+      sessionId,
+      closingAmountCash: closingSummary.expectedCash,
+      closingAmountCreditCard:
+        closingSummary.expectedCreditCard > 0.01
+          ? closingSummary.expectedCreditCard
+          : undefined,
+      closingAmountDebitCard:
+        closingSummary.expectedDebitCard > 0.01
+          ? closingSummary.expectedDebitCard
+          : undefined,
+      closingAmountTransfer:
+        closingSummary.expectedTransfer > 0.01
+          ? closingSummary.expectedTransfer
+          : undefined,
+      closingAmountCheck:
+        closingSummary.expectedCheck > 0.01
+          ? closingSummary.expectedCheck
+          : undefined,
+      closingNotes: "",
+    });
+  }, [closingSummary, sessionId, resetClose]);
+
   // Determine which payment methods are used (have transactions)
   const usedPaymentMethods = useMemo(() => {
     if (!closingSummary) return [];
@@ -108,14 +135,12 @@ export default function SessionDetailsSidebar({
       expected: number;
     }> = [];
 
-    if (closingSummary.expectedCash > 0.01) {
-      methods.push({
-        method: PaymentMethod.CASH,
-        label: "Efectivo",
-        fieldName: "closingAmountCash",
-        expected: closingSummary.expectedCash,
-      });
-    }
+    methods.push({
+      method: PaymentMethod.CASH,
+      label: "Efectivo",
+      fieldName: "closingAmountCash",
+      expected: closingSummary.expectedCash,
+    });
 
     if (closingSummary.expectedCreditCard > 0.01) {
       methods.push({
@@ -910,11 +935,7 @@ export default function SessionDetailsSidebar({
                       </button>
                       <button
                         type="submit"
-                        disabled={
-                          closingSession ||
-                          loadingCloseSummary ||
-                          totals.totalActual === 0
-                        }
+                        disabled={closingSession || loadingCloseSummary}
                         className="px-6 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                       >
                         {closingSession ? "Finalizando..." : "Finalizar Arqueo"}

@@ -5,7 +5,16 @@ export interface NavItem {
   requiresAdmin?: boolean;
 }
 
-export const navigationItems: NavItem[] = [
+export interface NavGroup {
+  label: string;
+  icon: string;
+  requiresAdmin?: boolean;
+  children: NavItem[];
+}
+
+export type NavEntry = NavItem | NavGroup;
+
+export const navigationItems: NavEntry[] = [
   {
     path: "/panel",
     label: "Panel de Control",
@@ -54,9 +63,20 @@ export const navigationItems: NavItem[] = [
     requiresAdmin: true,
   },
   {
-    path: "/panel/users",
-    label: "Usuarios",
-    icon: "users",
+    label: "Configuración",
+    icon: "settings",
     requiresAdmin: true,
+    children: [
+      {
+        path: "/panel/configuration/users",
+        label: "Usuarios",
+        icon: "users",
+      },
+      {
+        path: "/panel/configuration/printers",
+        label: "Impresoras",
+        icon: "printer",
+      },
+    ],
   },
 ];

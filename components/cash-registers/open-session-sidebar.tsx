@@ -141,7 +141,7 @@ export default function OpenSessionSidebar({
               placeholder="0.00"
             />
 
-            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
+            {/* <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded text-sm">
               <p className="font-medium">Información:</p>
               <ul className="list-disc list-inside mt-1 space-y-1">
                 <li>
@@ -152,7 +152,7 @@ export default function OpenSessionSidebar({
                 </li>
                 <li>Solo puede tener una sesión activa a la vez.</li>
               </ul>
-            </div>
+            </div> */}
           </>
         )}
 
